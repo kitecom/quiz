@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Leaderboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  @font-face { font-family:'DK Script'; src: local('Playlist Script'), local('PlaylistScript'), local('Playlist'), url('Playlist Script.otf'), url('PlaylistScript.otf'), url('Playlist.otf'), url('Playlist Script.ttf'), url('Playlist.ttf'); }
+  :root { --bg:#0b3040; --brand:#cc0099; --track:rgba(255,255,255,.07); --text:#f4f3ee; --muted:#8fa6b2;
+          --cond: 'Bahnschrift SemiBold Condensed', 'Bahnschrift Condensed', 'Bahnschrift', 'Barlow Condensed', 'Roboto Condensed', 'Arial Narrow', sans-serif; --gold:#f5c542; --up:#4ccf7a; --down:#ff6b6b; --h:60px; --f:60px; --m:2.5vw; }
+  * { box-sizing:border-box; }
+  html, body { margin:0; height:100%; background:var(--bg); color:var(--text); font-family: system-ui, "Segoe UI", Roboto, sans-serif; overflow:hidden; }
+  body.idle { cursor:none; }
+  header { display:flex; justify-content:space-between; align-items:center; padding:1.5vh var(--m) 0 var(--m); height:15vh; }
+  .brand { font-family:'Playlist Script', 'Playlist', 'DK Script', 'Brush Script MT', cursive; color:var(--brand); font-size:11vh; line-height:1; white-space:nowrap; transform:translateY(-.4vh); }
+  #title { font-family:var(--cond); font-stretch:condensed; font-variation-settings:'wdth' 75, 'wght' 600; font-weight:600; color:var(--brand); text-transform:uppercase; font-size:7vh; letter-spacing:.02em; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:55vw; }
+  #board { position:absolute; left:var(--m); right:var(--m); top:18vh; bottom:calc(var(--m) + 2.5vh); transition:right .5s ease; }
+  body.cdcorner #board { right:calc(var(--m) + 24vh); }
+  .row { position:absolute; left:0; right:0; height:var(--h); display:grid; grid-template-columns: var(--rankw, calc(var(--f) * 1.3)) var(--namew, 30%) minmax(0, 1fr) calc(var(--sq, 60px) + 2px);
+         align-items:center; gap:calc(var(--f) * .25); font-size:calc(var(--f) * .42);
+         transition: transform 1s cubic-bezier(.25,.8,.25,1), opacity .5s ease; will-change:transform; }
+  .rank { text-align:right; font-weight:700; color:var(--muted); font-family:var(--cond); font-variation-settings:'wdth' 75, 'wght' 600; }
+  .name { font-family:var(--cond); font-stretch:condensed; font-variation-settings:'wdth' 75, 'wght' 750; font-weight:700; color:var(--brand); text-transform:uppercase; text-align:right; font-size:1.15em; letter-spacing:.02em; overflow:hidden; white-space:nowrap; }
+  .bars { height:calc(var(--h) * .94); display:flex; flex-direction:column; justify-content:center; gap:calc(var(--f) * .07); min-width:0; }
+  .pct { position:relative; height:calc(var(--f) * .1); display:none; }
+  body.haspct .pct { display:block; }
+  .pfill { height:100%; width:0; border-radius:99px; background:rgba(255,255,255,.22); transition: width 1s cubic-bezier(.25,.8,.25,1); }
+  .row.stagger .pfill { transition-delay:1.5s; }
+  .plabel { position:absolute; top:50%; transform:translateY(-50%); margin-left:calc(var(--f) * .12); font-size:calc(var(--f) * .22); font-weight:600; color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap; transition: left 1s cubic-bezier(.25,.8,.25,1); }
+  .row.stagger .plabel { transition-delay:1.5s; }
+  .track { flex:1; min-height:0; border-radius:calc(var(--f) * .14); overflow:hidden; display:flex; }
+  .seg { height:100%; width:0; flex:none; transition: width 1s cubic-bezier(.25,.8,.25,1), border-radius .3s; display:flex; align-items:center; justify-content:center; overflow:hidden; white-space:nowrap; }
+  .seg span { font-size:calc(var(--f) * .3); font-weight:700; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.7); font-variant-numeric:tabular-nums; transition:opacity .4s; }
+  .seg span.off { opacity:0; }
+  .seg.on + .seg.on { border-left:2px solid var(--bg); }
+  .row.stagger .seg.b { transition-delay:.5s; }
+  .row.stagger .seg.p { transition-delay:1s; }
+  #legend { display:none; position:absolute; left:0; right:0; bottom:calc(var(--m) * .3); justify-content:center; gap:28px; color:var(--muted); font-size:clamp(13px, 1.8vh, 20px); }
+  #legend span { display:flex; align-items:center; gap:8px; }
+  #legend i { width:1.6em; height:.9em; border-radius:3px; display:inline-block; }
+  .score { font-weight:800; font-variant-numeric:tabular-nums; align-self:start; margin-top:calc(var(--h) * .03);
+           width:var(--sq, 60px); height:var(--sq, 60px); border-radius:calc(var(--sq, 60px) * .16);
+           display:flex; align-items:center; justify-content:center; background:var(--sc, transparent); color:#fff;
+           font-size:min(calc(var(--f) * .5), calc(var(--sq, 60px) * .5)); text-shadow:0 1px 2px rgba(0,0,0,.35); }
+  .score:empty { background:transparent; }
+  .row.hidden { opacity:0; }
+  #waiting { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:3vh; }
+  .cd { position:fixed; z-index:10; transition:opacity .4s; --cd:#cc0099; }
+  .cd.hidden { opacity:0; pointer-events:none; }
+  .cd.big { inset:0; background:rgba(11,48,64,.86); backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; }
+  .cd.corner { top:18vh; right:var(--m); background:rgba(11,48,64,.95); border:1px solid rgba(204,0,153,.45); border-radius:16px; padding:1.5vh 1.5vw; }
+  .cdbox { display:flex; flex-direction:column; align-items:center; gap:2vh; }
+  .cdlabel { font-family:'Playlist Script', 'Playlist', 'DK Script', 'Brush Script MT', cursive; color:var(--brand); font-weight:400; text-align:center; }
+  .ring { position:relative; }
+  .ring svg { width:100%; height:100%; transform:rotate(-90deg); display:block; }
+  .ring circle { fill:none; stroke-width:8; }
+  .ring .bgc { stroke:rgba(255,255,255,.08); }
+  .ring .fgc { stroke:var(--cd); stroke-linecap:round; stroke-dasharray:339.292; transition:stroke .5s; }
+  .cdtime { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-weight:800; font-variant-numeric:tabular-nums; }
+  .cd.big .ring { width:min(58vh, 58vw); height:min(58vh, 58vw); }
+  .cd.big .cdtime { font-size:min(15vh, 15vw); }
+  .cd.big .cdlabel { font-size:min(7vh, 5.5vw); }
+  .cd.corner .ring { width:17vh; height:17vh; }
+  .cd.corner .cdtime { font-size:4.6vh; }
+  .cd.corner .cdlabel { font-size:2.6vh; max-width:22vh; }
+  .cd.warn { --cd:#f5c542; }
+  .cd.crit { --cd:#ff6b6b; }
+  .cd.crit:not(.up) .cdtime { animation:pulse 1s ease-in-out infinite; }
+  .cd.up .cdtime { color:#ff6b6b; }
+  .cd.big.up .cdtime { font-size:min(9vh, 9vw); }
+  .cd.corner.up .cdtime { font-size:2.8vh; }
+  .cd.paused .cdtime { opacity:.45; }
+  @keyframes pulse { 50% { transform:scale(1.06); } }
+  #wall { position:fixed; inset:0; z-index:-1; background-repeat:repeat; background-position:center top; display:none; }
+  #wall::after { content:""; position:absolute; inset:0; background:var(--bg); opacity:var(--dim, .4); }
+  body.haswall { background:transparent; }
+  body.haswall #wall { display:block; }
+  #help { position:fixed; bottom:8px; right:12px; color:#555; font-size:12px; transition:opacity .5s; }
+  body.idle #help { opacity:0; }
+</style>
+</head>
+<body>
+<div id="wall"></div>
+<header>
+  <div class="brand">Dave Knottleys'</div>
+  <h1 id="title">Leaderboard</h1>
+</header>
+<div id="legend">
+  <span><i data-k="h" style="background:color-mix(in srgb, #9a9a94 45%, #0b3040)"></i>Handicap</span>
+  <span><i data-k="b" style="background:color-mix(in srgb, #9a9a94 68%, #ffffff)"></i>Bonus</span>
+  <span><i data-k="p" style="background:#9a9a94"></i>Round points</span>
+</div>
+<div id="board"><div id="waiting">Waiting for scores…</div></div>
+<div id="cd" class="cd hidden big">
+  <div class="cdbox">
+    <div class="cdlabel"></div>
+    <div class="ring">
+      <svg viewBox="0 0 120 120"><circle class="bgc" cx="60" cy="60" r="54"/><circle class="fgc" cx="60" cy="60" r="54"/></svg>
+      <div class="cdtime"></div>
+    </div>
+  </div>
+</div>
+<div id="help">F or double-click for full screen</div>
+
+<script>
+const PUB = 'quizPublished';
+let HEIGHT_CAP = 0.8;   // share of the space below the title the teams use. Set from the input page
+const bc = ('BroadcastChannel' in window) ? new BroadcastChannel('quiz-leaderboard') : null;
+const board = document.getElementById('board');
+const rows = {};
+let lastSeq = 0, current = null, timers = [];
+let cdSeq = 0, cdState = null, available = 0, barColour = null, lastMsg = null;
+
+const fmt = n => (Math.round(n * 2) / 2).toString();
+
+function talk(msg) {
+  if (bc) bc.postMessage(msg);
+  if (window.opener && !window.opener.closed) { try { window.opener.postMessage(msg, '*'); } catch {} }
+}
+
+function handle(msg) {
+  if (!msg || typeof msg !== 'object') return;
+  if (msg.type === 'boardPing') { talk({ type: 'boardPong' }); return; }
+  if (msg.type === 'title') { setTitle(msg.title); setCap(msg.heightCap); setBarColour(msg.barColour); setWall(msg.wallpaper, msg.wallDim); if ('available' in msg) { available = msg.available || 0; refreshPct(); } return; }
+  if (msg.type === 'countdown') { if (msg.seq > cdSeq) { cdSeq = msg.seq; cdState = msg; } return; }
+  if (msg.type !== 'scores' || msg.seq <= lastSeq) return;
+  lastSeq = msg.seq;
+  talk({ type: 'ack', seq: msg.seq });
+  apply(msg);
+}
+function setPct(r, e) {
+  let pct;
+  if ('pa' in e) pct = e.pa > 0 ? e.pe / e.pa * 100 : 0;
+  else { const earned = (e.p ?? 0) + (e.b ?? 0); pct = available > 0 ? earned / available * 100 : 0; }
+  r.querySelector('.pfill').style.width = Math.max(0, Math.min(100, pct)) + '%';
+  const lab = r.querySelector('.plabel');
+  lab.textContent = Math.round(pct) > 0 ? Math.round(pct) + '%' : '';
+  lab.style.left = Math.max(0, Math.min(88, pct)) + '%';
+}
+function setSq() {
+  const h = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--h')) || 60;
+  const f = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--f')) || 60;
+  const sq = h * 0.94 - (document.body.classList.contains('haspct') ? f * 0.17 : 0);
+  document.documentElement.style.setProperty('--sq', Math.max(16, sq).toFixed(1) + 'px');
+}
+function refreshPct() {
+  document.body.classList.toggle('haspct', available > 0);
+  setSq();
+  if (current) current.entries.forEach(e => rows[e.id] && setPct(rows[e.id], e));
+}
+let wallOk = null, wallOn = true;
+const wallImg = new Image();
+wallImg.onload = () => { wallOk = true; document.getElementById('wall').style.backgroundImage = "url('wallpaper.jpg')"; applyWall(); };
+wallImg.onerror = () => { wallOk = false; applyWall(); };
+wallImg.src = 'wallpaper.jpg';
+function applyWall() { document.body.classList.toggle('haswall', !!wallOk && wallOn); }
+function setWall(on, dim) {
+  if (on !== undefined) wallOn = !!on;
+  if (dim !== undefined && dim !== null) document.documentElement.style.setProperty('--dim', dim);
+  applyWall();
+}
+function setBarColour(c) {
+  c = c || null;
+  if (c === barColour) return;
+  barColour = c;
+  if (lastMsg) { lastMsg.barColour = c; apply({ ...lastMsg, style: 'live' }); }
+}
+function setCap(c) { if (c && c !== HEIGHT_CAP) { HEIGHT_CAP = c; layout(); } }
+function setTitle(t) { document.getElementById('title').textContent = t || 'Leaderboard'; document.title = t || 'Leaderboard'; }
+
+if (bc) bc.onmessage = e => handle(e.data);
+window.addEventListener('message', e => handle(e.data));
+window.addEventListener('storage', e => { if ((e.key === PUB || e.key === 'quizCountdown') && e.newValue) { try { handle(JSON.parse(e.newValue)); } catch {} } });
+
+function layout() {
+  if (!current) return;
+  const n = current.entries.length || 1;
+  const avail = board.clientHeight * HEIGHT_CAP;
+  const h = Math.max(22, Math.min(200, avail / (n - 0.08) * 0.92));
+  const step = n > 1 ? (avail - h) / (n - 1) : 0;
+  document.documentElement.style.setProperty('--h', h + 'px');
+  document.documentElement.style.setProperty('--f', Math.min(h, 95) + 'px');
+  setSq();
+  fitNameColumn();
+  fitRankColumn();
+  current.order.forEach((id, i) => { rows[id].style.transform = `translateY(${i * step}px)`; fitLabels(rows[id]); fitName(rows[id]); });
+}
+
+function ensureRow(e) {
+  if (rows[e.id]) return rows[e.id];
+  const r = document.createElement('div');
+  r.className = 'row';
+  r.innerHTML = '<div class="rank"></div><div class="name"></div><div class="bars"><div class="track"><div class="seg h"><span></span></div><div class="seg b"><span></span></div><div class="seg p"><span></span></div></div><div class="pct"><div class="pfill"></div><span class="plabel"></span></div></div><div class="score"></div>';
+  r.style.transform = `translateY(${board.clientHeight}px)`;
+  board.appendChild(r);
+  rows[e.id] = r;
+  return r;
+}
+
+function countUp(el, to, ms) {
+  const from = parseFloat(el.dataset.v || '0') || 0;
+  const start = performance.now();
+  el.dataset.v = to;
+  function tick(now) {
+    const p = Math.min(1, (now - start) / ms);
+    const v = from + (to - from) * (1 - Math.pow(1 - p, 3));
+    el.textContent = p < 1 ? Math.round(v) : fmt(to);
+    if (p < 1 && el.dataset.v == to) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
+function apply(msg) {
+  timers.forEach(clearTimeout); timers = [];
+  lastMsg = msg;
+  if ('wallpaper' in msg) setWall(msg.wallpaper, msg.wallDim);
+  if ('barColour' in msg) barColour = msg.barColour || null;
+  setTitle(msg.title);
+  if (msg.heightCap) HEIGHT_CAP = msg.heightCap;
+  if ('available' in msg) { available = msg.available || 0; document.body.classList.toggle('haspct', available > 0); setSq(); }
+  const entries = msg.entries || [];
+  document.getElementById('waiting').style.display = entries.length ? 'none' : 'flex';
+
+  const ids = new Set(entries.map(e => e.id));
+  Object.keys(rows).forEach(id => { if (!ids.has(id)) { rows[id].remove(); delete rows[id]; } });
+
+  const sorted = [...entries].sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
+  const ranks = {}, counts = {};
+  let rank = 0, prev = null;
+  sorted.forEach((e, i) => { if (e.total !== prev) { rank = i + 1; prev = e.total; } ranks[e.id] = rank; counts[rank] = (counts[rank] || 0) + 1; });
+  const barLen = e => Math.max(0, e.h || 0) + Math.max(0, e.p || 0) + Math.max(0, e.b || 0);
+  const max = Math.max(0, ...entries.map(barLen));
+  const lc = barColour || '#9a9a94';
+  document.querySelectorAll('#legend i').forEach(i => i.style.background =
+    { h: `color-mix(in srgb, ${lc} 45%, #0b3040)`, b: `color-mix(in srgb, ${lc} 68%, #ffffff)`, p: lc }[i.dataset.k]);
+  const anyExtra = entries.some(e => (e.h || 0) !== 0 || (e.b || 0) !== 0);
+  document.getElementById('legend').style.display = anyExtra ? 'flex' : 'none';
+  current = { entries, order: sorted.map(e => e.id) };
+
+  sorted.forEach(e => ensureRow(e));
+  layout();
+
+  const paint = (e, animMs) => {
+    const r = rows[e.id];
+    r.querySelector('.rank').textContent = (counts[ranks[e.id]] > 1 ? '=' : '') + ranks[e.id];
+    r.querySelector('.name').textContent = e.name;
+    r.querySelector('.name').style.color = barColour || e.color;
+    fitName(r);
+    setSegs(r, e, max);
+    setPct(r, e);
+    const sc = r.querySelector('.score');
+    sc.style.setProperty('--sc', barColour || e.color);
+    if (e.total) countUp(sc, e.total, animMs); else { sc.dataset.v = 0; sc.textContent = ''; }
+    r.classList.toggle('leader', ranks[e.id] === 1 && e.total > 0);
+    r.classList.remove('hidden');
+  };
+
+  if (msg.style === 'dramatic') {
+    sorted.forEach(e => {
+      const r = rows[e.id];
+      r.classList.add('hidden');
+      r.classList.remove('leader');
+      r.classList.add('stagger');
+      r.querySelectorAll('.seg').forEach(sg => { sg.style.width = '0%'; sg.classList.remove('on'); });
+      r.querySelector('.pfill').style.width = '0%';
+      r.querySelector('.plabel').style.left = '0%';
+      r.querySelector('.score').dataset.v = 0;
+    });
+    let t = 600;
+    for (let i = sorted.length - 1; i >= 0; i--) {
+      const e = sorted[i];
+      timers.push(setTimeout(() => paint(e, 900), t));
+      t += i <= 3 ? 1800 : 900;
+    }
+  } else {
+    sorted.forEach(e => { rows[e.id].classList.remove('stagger'); paint(e, 800); });
+    fitRankColumn();
+  }
+}
+
+function setSegs(r, e, max) {
+  const c = barColour || e.color;
+  const parts = { h: Math.max(0, e.h || 0), p: Math.max(0, e.p ?? e.total ?? 0), b: Math.max(0, e.b || 0) };
+  const bg = {
+    h: `color-mix(in srgb, ${c} 45%, #0b3040)`,
+    p: c,
+    b: `color-mix(in srgb, ${c} 68%, #ffffff)`
+  };
+  ['h', 'p', 'b'].forEach(k => {
+    const sg = r.querySelector('.seg.' + k);
+    sg.style.background = bg[k];
+    sg.style.width = max > 0 ? (parts[k] / max * 100) + '%' : '0%';
+    sg.classList.toggle('on', parts[k] > 0);
+    sg.title = ({ h: 'Handicap ', p: 'Round points ', b: 'Bonus ' })[k] + fmt(parts[k]);
+    sg.dataset.pct = max > 0 ? parts[k] / max : 0;
+    sg.firstElementChild.textContent = parts[k] > 0 ? fmt(parts[k]) : '';
+  });
+  const on = [...r.querySelectorAll('.seg.on')];
+  r.querySelectorAll('.seg').forEach(sg => sg.style.borderRadius = '');
+  if (on.length) { const rad = 'calc(var(--f) * .14)'; on[on.length - 1].style.borderTopRightRadius = rad; on[on.length - 1].style.borderBottomRightRadius = rad; }
+  fitLabels(r);
+}
+
+const measurer = document.createElement('div');
+measurer.style.cssText = 'position:absolute; visibility:hidden; left:-9999px; top:0; font-size:calc(var(--f) * .42);';
+measurer.innerHTML = '<span class="name" style="display:inline-block; overflow:visible; text-align:left"></span>';
+document.body.appendChild(measurer);
+const rankMeasurer = document.createElement('div');
+rankMeasurer.style.cssText = 'position:absolute; visibility:hidden; left:-9999px; top:0; font-size:calc(var(--f) * .42);';
+rankMeasurer.innerHTML = '<span class="rank" style="display:inline-block"></span>';
+document.body.appendChild(rankMeasurer);
+function fitRankColumn() {
+  const span = rankMeasurer.firstElementChild;
+  let w = 0;
+  Object.values(rows).forEach(r => { span.textContent = r.querySelector('.rank').textContent || '0'; w = Math.max(w, span.getBoundingClientRect().width); });
+  if (w) document.documentElement.style.setProperty('--rankw', Math.ceil(w + 2) + 'px');
+}
+function fitNameColumn() {
+  if (!current) return;
+  const span = measurer.firstElementChild;
+  let w = 0;
+  current.entries.forEach(e => { span.textContent = e.name; w = Math.max(w, span.getBoundingClientRect().width); });
+  const cap = board.clientWidth * 0.4;
+  document.documentElement.style.setProperty('--namew', Math.ceil(Math.min(cap, w + 4)) + 'px');
+}
+function fitName(r) {
+  const n = r.querySelector('.name');
+  n.style.fontSize = '';
+  if (n.scrollWidth > n.clientWidth && n.clientWidth > 0) {
+    const scale = Math.max(0.55, n.clientWidth / n.scrollWidth * 0.98);
+    n.style.fontSize = (1.15 * scale).toFixed(3) + 'em';
+  }
+}
+function fitLabels(r) {
+  const track = r.querySelector('.track');
+  const h = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--f')) || 60;
+  r.querySelectorAll('.seg').forEach(sg => {
+    const span = sg.firstElementChild;
+    const px = (parseFloat(sg.dataset.pct) || 0) * track.clientWidth;
+    const need = (span.textContent.length * 0.18 + 0.12) * h;
+    const scale = Math.min(1, px / need);
+    span.style.fontSize = `calc(var(--f) * ${(0.3 * scale).toFixed(3)})`;
+    span.classList.toggle('off', !span.textContent || scale < 0.6);
+  });
+}
+
+window.addEventListener('resize', layout);
+
+function toggleFs() {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen().catch(() => {});
+}
+document.addEventListener('dblclick', toggleFs);
+document.addEventListener('keydown', e => { if (e.key === 'f' || e.key === 'F') toggleFs(); });
+
+let idleT;
+document.addEventListener('mousemove', () => {
+  document.body.classList.remove('idle');
+  clearTimeout(idleT); idleT = setTimeout(() => document.body.classList.add('idle'), 2500);
+});
+idleT = setTimeout(() => document.body.classList.add('idle'), 2500);
+
+const cdEl = document.getElementById('cd'), cdFg = cdEl.querySelector('.fgc'), cdTime = cdEl.querySelector('.cdtime'), cdLabel = cdEl.querySelector('.cdlabel');
+let cdClass = '';
+function cdFrame() {
+  requestAnimationFrame(cdFrame);
+  const c = cdState;
+  let cls = 'cd hidden ' + (c && c.size === 'corner' ? 'corner' : 'big');
+  if (c && c.running) {
+    const rem = c.paused ? c.remaining : c.endAt - Date.now();
+    if (rem > -6000) {
+      const frac = rem <= 0 ? 1 : Math.max(0, Math.min(1, rem / (c.duration || 1)));
+      cdFg.style.strokeDashoffset = (339.292 * (1 - frac)).toFixed(2);
+      if (rem > 0) {
+        const t = Math.ceil(rem / 1000);
+        cdTime.textContent = Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0');
+        cdLabel.textContent = c.label || '';
+      } else { cdTime.textContent = "Time's up!"; cdLabel.textContent = ''; }
+      cls = 'cd ' + (c.size === 'corner' ? 'corner' : 'big') +
+            (rem <= 0 ? ' crit up' : rem <= 10000 ? ' crit' : rem <= 30000 ? ' warn' : '') + (c.paused ? ' paused' : '');
+    }
+  }
+  if (cls !== cdClass) {
+    cdEl.className = cls; cdClass = cls;
+    const corner = !cls.includes('hidden') && cls.includes('corner');
+    if (document.body.classList.contains('cdcorner') !== corner) {
+      document.body.classList.toggle('cdcorner', corner);
+      setTimeout(layout, 550);
+    }
+  }
+}
+requestAnimationFrame(cdFrame);
+try { const c = JSON.parse(localStorage.getItem('quizCountdown')); if (c) handle(c); } catch {}
+
+try {
+  const last = JSON.parse(localStorage.getItem(PUB));
+  if (last && last.type === 'scores') handle({ ...last, style: 'live' });
+} catch {}
+talk({ type: 'hello' });
+</script>
+</body>
+</html>

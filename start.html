@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Start</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23cc0099'/%3E%3Cpath d='M24 16 L50 32 L24 48 Z' fill='white'/%3E%3C/svg%3E">
+<style>
+  :root { --bg:#f6f5f1; --card:#fff; --line:#dedcd4; --text:#222; --muted:#6b6a65; --accent:#2f6fd6; --brand:#cc0099; }
+  * { box-sizing:border-box; }
+  html, body { height:100%; }
+  body { margin:0; font-family: system-ui, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--text); font-size:17px; display:flex; flex-direction:column; }
+  header { display:flex; align-items:center; gap:14px; padding:16px 24px; background:var(--card); border-bottom:1px solid var(--line); }
+  .brand { font-family:'Playlist Script', 'Playlist', 'DK Script', 'Brush Script MT', cursive; color:var(--brand); font-size:38px; line-height:1; white-space:nowrap; }
+  .tlab { font-size:13px; color:var(--muted); font-weight:600; margin-left:auto; white-space:nowrap; }
+  #qtitle { font:inherit; font-size:20px; font-weight:700; padding:7px 12px; border:1px solid #c9c7bf; border-radius:8px; width:min(460px, 45vw); }
+  #qtitle:focus { outline:2px solid var(--accent); outline-offset:-1px; }
+  main { flex:1; display:flex; flex-direction:column; gap:18px; padding:22px 24px 26px; min-height:0; }
+  .launch { display:grid; grid-template-columns:repeat(3, 1fr); gap:14px; }
+  .launch a { display:flex; flex-direction:column; gap:4px; padding:18px 20px; border-radius:12px; text-decoration:none; color:#fff; font-weight:700; font-size:22px; border:none; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.08); transition:filter .15s, transform .05s; }
+  .launch a:hover { filter:brightness(1.08); }
+  .launch a:active { transform:translateY(1px); }
+  #goQuiz { background:#3a3936; }
+  #goScore { background:var(--accent); }
+  #goBoard { background:#910885; }
+  #boardMsg { font-size:13px; color:var(--muted); min-height:18px; margin-top:-8px; }
+  #boardMsg.off { color:#b3261e; }
+  .lower { flex:1; display:grid; grid-template-columns:minmax(0, 1fr) minmax(380px, 460px); gap:18px; min-height:0; }
+  .panel { display:flex; flex-direction:column; background:var(--card); border:1px solid var(--line); border-radius:10px; min-height:220px; overflow:hidden; }
+  .phead { display:flex; align-items:center; gap:6px; padding:8px 12px; border-bottom:1px solid #eeede8; background:#fafaf7; min-height:47px; }
+  .phead h2 { margin:0; font-size:14px; font-weight:600; color:var(--muted); }
+  .phead .spacer { flex:1; }
+  .phead button, .addteam { font:inherit; font-size:13px; padding:5px 10px; border:1px solid #c9c7bf; background:#fff; border-radius:7px; cursor:pointer; }
+  .phead button:hover, .addteam:hover { background:#f0efea; }
+  .tscroll { flex:1; overflow:auto; min-height:0; }
+  #teams { width:100%; border-collapse:collapse; }
+  #teams th { position:sticky; top:0; background:#fff; font-size:12px; color:var(--muted); font-weight:600; text-align:left; padding:8px 10px 6px; border-bottom:1px solid #eeede8; }
+  #teams td { padding:4px 10px; border-bottom:1px solid #f1f0eb; }
+  #teams td.no { width:28px; color:var(--muted); font-weight:700; text-align:right; padding-right:4px; }
+  #teams th.m, #teams td.m { width:84px; text-align:center; }
+  #teams th.h, #teams td.h { width:64px; text-align:center; }
+  #teams td.h { font-weight:600; color:var(--muted); font-variant-numeric:tabular-nums; }
+  .base { display:flex; align-items:center; gap:10px; padding:10px 14px; border-top:1px solid #eeede8; font-size:14px; color:var(--muted); }
+  .base label { font-weight:600; color:var(--text); white-space:nowrap; }
+  .base input { font:inherit; font-size:16px; font-weight:700; width:52px; text-align:center; padding:5px 6px; border:1px solid #c9c7bf; border-radius:7px; }
+  .base input:focus { outline:2px solid var(--accent); outline-offset:-1px; }
+  .base small { line-height:1.3; }
+  #teams td.x { width:34px; text-align:right; }
+  #teams input { font:inherit; font-size:15px; width:100%; padding:6px 8px; border:1px solid transparent; border-radius:6px; background:transparent; }
+  #teams input:hover { border-color:#e3e1d8; }
+  #teams input:focus { outline:none; border-color:var(--accent); background:#fff; }
+  #teams input.mem { text-align:center; font-weight:600; width:60px; }
+  #teams .swatch { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:2px; vertical-align:middle; }
+  .del { background:none; border:none; color:#bbb; cursor:pointer; font-size:14px; padding:4px 6px; border-radius:5px; }
+  .del:hover { color:#c44; background:#fdecea; }
+  .addrow { padding:8px 10px; }
+  .pot { border-top:1px solid #eeede8; padding:12px 14px 14px; background:#fafaf7; }
+  .potline { display:flex; justify-content:space-between; align-items:baseline; font-size:15px; color:var(--muted); }
+  .potline b { color:var(--text); font-size:17px; font-variant-numeric:tabular-nums; }
+  .potline.big { margin-top:4px; }
+  .potline.big b { font-size:24px; color:var(--brand); }
+  .prizes { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; margin-top:10px; }
+  .prize { background:#fff; border:1px solid var(--line); border-radius:9px; padding:8px 10px; text-align:center; }
+  .prize .pl { font-size:12px; color:var(--muted); font-weight:600; }
+  .prize .pv { font-size:22px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .prize.p1 { border-color:#d9b44a; background:#fffaeb; }
+  dialog.uidlg { border:1px solid #dedcd4; border-radius:12px; padding:20px 22px; width:min(440px, 92vw); color:#222; background:#fff; font-family:system-ui, "Segoe UI", Roboto, sans-serif; }
+  dialog.uidlg::backdrop { background:rgba(0,0,0,.35); }
+  dialog.uidlg .uimsg { margin:0 0 16px; white-space:pre-line; line-height:1.45; font-size:15px; }
+  dialog.uidlg .uirow { display:flex; gap:8px; justify-content:flex-end; }
+  dialog.uidlg button { font:inherit; font-size:14px; padding:8px 16px; border:1px solid #c9c7bf; background:#fff; border-radius:8px; cursor:pointer; }
+  dialog.uidlg .uiyes { background:#2f6fd6; border-color:#2f6fd6; color:#fff; }
+  .notes { flex:1; display:flex; flex-direction:column; background:var(--card); border:1px solid var(--line); border-left:4px solid var(--brand); border-radius:10px; min-height:220px; overflow:hidden; }
+  .nhead { display:flex; align-items:center; gap:6px; padding:8px 12px; min-height:47px; border-bottom:1px solid #eeede8; background:#fafaf7; }
+  .nhead h2 { margin:0 8px 0 0; font-size:14px; font-weight:600; color:var(--muted); }
+  .nhead button { font:inherit; font-size:14px; min-width:32px; height:30px; padding:0 8px; border:1px solid #c9c7bf; background:#fff; border-radius:7px; cursor:pointer; }
+  .nhead button:hover { background:#f0efea; }
+  .nhead button.on { background:#222; border-color:#222; color:#fff; }
+  .nhead .spacer { flex:1; }
+  #saved { font-size:12px; color:var(--muted); }
+  #notes { flex:1; overflow:auto; padding:16px 18px; line-height:1.5; outline:none; }
+  #notes:empty::before { content:attr(data-ph); color:#aaa; }
+  #notes ul, #notes ol { margin:.3em 0; padding-left:1.6em; }
+  #notes p { margin:0 0 .4em; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">Dave Knottleys'</div>
+  <label class="tlab" for="qtitle">Quiz title</label>
+  <input id="qtitle" placeholder="Shown on the leaderboard and scoreboard" autocomplete="off">
+</header>
+<main>
+  <div class="launch">
+    <a id="goQuiz" href="quiz.html" target="quizQuestionsIndex" title="Questions and answers. Goes to its tab if it's already open">Quiz</a>
+    <a id="goScore" href="quiz_files/scoreboard.html" target="quizScoring" title="Score entry and countdown. Goes to its tab if it's already open">Scoreboard</a>
+    <a id="goBoard" href="quiz_files/leaderboard.html" title="Opens the projector display in its own window">Leaderboard</a>
+  </div>
+  <div id="boardMsg"></div>
+  <div class="lower">
+  <section class="notes">
+    <div class="nhead">
+      <h2>Notes</h2>
+      <button type="button" data-cmd="bold" title="Bold (Ctrl+B)"><b>B</b></button>
+      <button type="button" data-cmd="italic" title="Italic (Ctrl+I)"><i>I</i></button>
+      <button type="button" data-cmd="underline" title="Underline (Ctrl+U)"><u>U</u></button>
+      <button type="button" data-cmd="insertUnorderedList" title="Bullet list">•&#8202;≡</button>
+      <span class="spacer"></span>
+      <span id="saved"></span>
+    </div>
+    <div id="notes" contenteditable="true" data-ph="Notes for the night: running order, reminders, anything you want to keep to hand"></div>
+  </section>
+  <section class="panel">
+    <div class="phead"><h2>Teams</h2><span class="spacer"></span><span id="tcount" style="font-size:12px;color:var(--muted)"></span></div>
+    <div class="tscroll">
+      <table id="teams"><thead><tr><th></th><th>Team name</th><th class="m">Members</th><th class="h" title="Handicap, worked out from the baseline below">Handicap</th><th></th></tr></thead><tbody></tbody></table>
+      <div class="addrow"><button type="button" class="addteam" id="addTeam">+ Add team</button></div>
+    </div>
+    <div class="base">
+      <label for="baseline">Handicap baseline</label>
+      <input id="baseline" maxlength="2" inputmode="numeric" placeholder="–" autocomplete="off">
+      <small id="baseHint">members per team. Teams of this size get 0, one fewer gets 1, and so on</small>
+    </div>
+    <div class="pot">
+      <div class="potline"><span>Entrants</span><b id="entrants">0</b></div>
+      <div class="potline big"><span>Pot <small>(entrants × £<span id="fee"></span>)</small></span><b id="potv">£0</b></div>
+      <div class="prizes">
+        <div class="prize p1"><div class="pl">1st · ~50%</div><div class="pv" id="pz1">£0</div></div>
+        <div class="prize"><div class="pl">2nd · ~30%</div><div class="pv" id="pz2">£0</div></div>
+        <div class="prize"><div class="pl">3rd · ~20%</div><div class="pv" id="pz3">£0</div></div>
+      </div>
+    </div>
+  </section>
+  </div>
+</main>
+<script>
+try { if (!window.name) window.name = 'quizStart'; } catch {}
+const NKEY = 'quizStartNotes';
+const notes = document.getElementById('notes');
+
+/* Same clean-up as the quiz page notes: keeps bold, italic, underline, line breaks and lists only. */
+const ALLOWED = new Set(['B','STRONG','I','EM','U','BR','DIV','P','UL','OL','LI']);
+function cleanHTML(html) {
+  const tpl = document.createElement('template');
+  tpl.innerHTML = html;
+  const walk = node => {
+    [...node.childNodes].forEach(c => {
+      if (c.nodeType === 1) {
+        if (/^(SCRIPT|STYLE|IFRAME|OBJECT|EMBED|META|LINK)$/.test(c.tagName)) { c.remove(); return; }
+        walk(c);
+        if (!ALLOWED.has(c.tagName)) { c.replaceWith(...c.childNodes); return; }
+        [...c.attributes].forEach(a => c.removeAttribute(a.name));
+      } else if (c.nodeType !== 3) c.remove();
+    });
+  };
+  walk(tpl.content);
+  const out = tpl.innerHTML;
+  return (out.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, '').trim() || /<(ul|ol|li)/i.test(out)) ? out : '';
+}
+function load() {
+  let html = '';
+  try { html = localStorage.getItem(NKEY) || ''; } catch {}
+  notes.innerHTML = cleanHTML(html);
+}
+let tSave;
+function saveSoon() {
+  clearTimeout(tSave);
+  document.getElementById('saved').textContent = '';
+  tSave = setTimeout(() => {
+    const html = cleanHTML(notes.innerHTML);
+    try { if (html) localStorage.setItem(NKEY, html); else localStorage.removeItem(NKEY); } catch {}
+    if (!html && notes.innerHTML) notes.innerHTML = '';
+    document.getElementById('saved').textContent = 'Saved';
+  }, 300);
+}
+notes.addEventListener('input', saveSoon);
+notes.addEventListener('paste', e => {
+  e.preventDefault();
+  const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+  document.execCommand('insertText', false, text);
+});
+document.querySelectorAll('.nhead button[data-cmd]').forEach(b => {
+  b.addEventListener('mousedown', e => e.preventDefault());
+  b.addEventListener('click', () => { notes.focus(); document.execCommand(b.dataset.cmd); syncBtns(); saveSoon(); });
+});
+function syncBtns() {
+  document.querySelectorAll('.nhead button[data-cmd]').forEach(b => {
+    let on = false; try { on = document.queryCommandState(b.dataset.cmd); } catch {}
+    b.classList.toggle('on', on && notes.contains(document.getSelection().anchorNode));
+  });
+}
+document.addEventListener('selectionchange', syncBtns);
+
+/* ---------- Quiz title ----------
+   Typed here and stored with the scoring data, so the scoreboard shows it and Save quiz names the file after it.
+   It's also sent straight to the leaderboard, so it changes there even when the scoreboard isn't open. */
+const SKEY = 'quizScoringState';
+// true only while this window has focus and the box is being typed in (a box keeps focus when you switch tabs)
+const typingIn = el => document.hasFocus() && document.activeElement === el;
+const titleBox = document.getElementById('qtitle');
+function readScoring() { try { const s = JSON.parse(localStorage.getItem(SKEY)); return s && s.rounds ? s : null; } catch { return null; } }
+function newScoring() {   // nothing set up yet: start the scoring data the same way the scoreboard would
+  let names = null, bf = [], af = [];
+  try { names = JSON.parse(localStorage.getItem('quizRoundNames')); } catch {}
+  try { bf = JSON.parse(localStorage.getItem('quizRoundBonus')) || []; } catch {}
+  try { af = JSON.parse(localStorage.getItem('quizRoundAudio')) || []; } catch {}
+  let q = {}; try { q = JSON.parse(localStorage.getItem('quizQuestions')) || {}; } catch {}
+  const n = Math.max(names && names.length || 0, ...Object.keys(q).map(k => +k + 1).filter(x => !isNaN(x)), 6);
+  const pal = ['#7F77DD', '#1D9E75', '#D85A30', '#D4537E'];
+  return { title: '', live: false,
+    rounds: Array.from({ length: n }, (_, i) => ({ name: (names && names[i]) || 'R' + (i + 1), bonus: !!bf[i], audio: !!af[i] })),
+    teams: [1, 2, 3, 4].map(k => ({ id: 't' + Date.now().toString(36) + k, name: 'Team ' + k, color: pal[k - 1], handicap: null, scores: [], bonus: [], joker: -1 })),
+    lastRanks: null, useJoker: true };
+}
+function showTitle() {
+  const s = readScoring(), t = (s && s.title) || '';
+  if (!typingIn(titleBox)) titleBox.value = t;
+  document.title = t ? 'Start · ' + t : 'Start';
+}
+function tellBoard(s) {
+  if (!bc) return;
+  bc.postMessage({ type: 'title', title: s.title, heightCap: s.heightCap ?? 0.8,
+    barColour: s.oneColour ? (s.barColour || '#910885') : null, wallpaper: s.wallpaper ?? true, wallDim: (s.wallDim ?? 40) / 100 });
+}
+titleBox.addEventListener('input', () => {
+  const s = readScoring() || newScoring();
+  s.title = titleBox.value.trim();
+  try {
+    localStorage.setItem(SKEY, JSON.stringify(s));
+    // keep the leaderboard's last snapshot in step, so a leaderboard opened later shows the new title too
+    const pub = JSON.parse(localStorage.getItem('quizPublished') || 'null');
+    if (pub && typeof pub === 'object') { pub.title = s.title; localStorage.setItem('quizPublished', JSON.stringify(pub)); }
+  } catch {}
+  document.title = s.title ? 'Start · ' + s.title : 'Start';
+  tellBoard(s);
+});
+titleBox.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); notes.focus(); } });
+window.addEventListener('storage', e => {
+  if ((e.key === NKEY || e.key === null) && !typingIn(notes)) load();
+  if (e.key === SKEY || e.key === null) showTitle();
+});
+
+/* Leaderboard: opened the same way as from the scoreboard, without a link back to this page ("noopener"),
+   so opening other windows later never knocks it out of full screen. If it's already open, nothing new opens. */
+let bc = null; try { bc = new BroadcastChannel('quiz-leaderboard'); } catch {}
+function pingBoard(ms) {
+  return new Promise(res => {
+    if (!bc) return res(false);
+    let done = false;
+    const on = e => { if (e.data && e.data.type === 'boardPong') { done = true; bc.removeEventListener('message', on); res(true); } };
+    bc.addEventListener('message', on);
+    bc.postMessage({ type: 'boardPing' });
+    setTimeout(() => { if (!done) { bc.removeEventListener('message', on); res(false); } }, ms);
+  });
+}
+const msg = document.getElementById('boardMsg');
+document.getElementById('goBoard').addEventListener('click', async e => {
+  e.preventDefault();
+  msg.className = ''; msg.textContent = '';
+  if (await pingBoard(250)) { msg.textContent = 'The leaderboard is already open in its own window'; return; }
+  window.open(new URL('quiz_files/leaderboard.html', location.href).href, 'quizLeaderboard', 'noopener,popup=yes,width=1280,height=800');
+  setTimeout(async () => {
+    if (!(await pingBoard(400))) { msg.className = 'off'; msg.textContent = 'No leaderboard appeared. Allow pop-ups for this page and try again'; }
+  }, 2500);
+});
+
+/* ---------- Teams and prize pot ----------
+   These are the same teams as on the scoreboard: names typed here show there (and on the leaderboard),
+   and teams added on the scoreboard appear here. Members are stored with each team, so Save quiz keeps them. */
+const ENTRY_FEE = 5;      // £ per person
+const SPLIT = [0.5, 0.3, 0.2];
+const ROUND_TO = 5;      // prizes rounded to the nearest £5
+const PALETTE = ['#7F77DD','#1D9E75','#D85A30','#D4537E','#378ADD','#EF9F27','#639922','#E24B4A','#5DCAA5','#AFA9EC','#F0997B','#85B7EB','#97C459','#ED93B1','#BA7517','#9a9890'];
+const tbody = document.querySelector('#teams tbody');
+const escH = v => String(v ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+document.getElementById('fee').textContent = ENTRY_FEE;
+function writeScoring(s) { try { localStorage.setItem(SKEY, JSON.stringify(s)); } catch {} }
+function renderTeams() {
+  const s = readScoring(), teams = s ? s.teams : [];
+  tbody.innerHTML = teams.map((t, i) => `<tr data-id="${escH(t.id)}">
+    <td class="no"><span class="swatch" style="background:${escH(t.color)}"></span></td>
+    <td><input class="tn" value="${escH(t.name)}" placeholder="Team ${i + 1}" autocomplete="off"></td>
+    <td class="m"><input class="mem" value="${t.members ?? ''}" placeholder="–" maxlength="2" inputmode="numeric" autocomplete="off"></td>
+    <td class="h">${t.handicap ?? ''}</td>
+    <td class="x"><button type="button" class="del" title="Remove team">✕</button></td></tr>`).join('');
+  sums(teams);
+}
+function sums(teams) {
+  const n = teams.reduce((a, t) => a + (Number(t.members) || 0), 0), pot = n * ENTRY_FEE;
+  document.getElementById('entrants').textContent = n;
+  // Prizes rounded to the nearest £5. 2nd and 3rd are rounded; 1st gets the rest, so the three always add up to the pot
+  // (e.g. £115: 2nd £34.50 → £35, 3rd £23 → £25, 1st £55)
+  const r5 = v => Math.round(v / ROUND_TO) * ROUND_TO;
+  const p2 = r5(pot * SPLIT[1]), p3 = r5(pot * SPLIT[2]), p1 = Math.max(0, pot - p2 - p3);
+  const m = v => '£' + v.toLocaleString('en-GB');
+  document.getElementById('potv').textContent = m(pot);
+  [p1, p2, p3].forEach((v, k) => document.getElementById('pz' + (k + 1)).textContent = m(v));
+  document.getElementById('tcount').textContent = teams.length ? teams.length + (teams.length === 1 ? ' team' : ' teams') : '';
+}
+function updateTeam(id, fn) {
+  const s = readScoring() || newScoring();
+  const t = s.teams.find(x => x.id === id); if (!t) return;
+  fn(t); applyHandicap(s, t); writeScoring(s); sums(s.teams);
+  const cell = tbody.querySelector(`tr[data-id="${CSS.escape(id)}"] td.h`); if (cell) cell.textContent = t.handicap ?? '';
+}
+/* Handicap = baseline − members (never below 0). Only set when both the baseline and the team's members are filled in;
+   otherwise the handicap is left as it is, so one typed on the scoreboard still works. */
+function applyHandicap(s, t) {
+  const b = s.baseline;
+  if (b === undefined || b === null || t.members === undefined || t.members === null) return;
+  t.handicap = Math.max(0, b - t.members);
+}
+const baseBox = document.getElementById('baseline');
+function showBaseline() { const s = readScoring(); if (!typingIn(baseBox)) baseBox.value = s && s.baseline != null ? s.baseline : ''; }
+baseBox.addEventListener('focus', () => baseBox.select());
+baseBox.addEventListener('input', () => {
+  const v = baseBox.value.replace(/\D/g, '').slice(0, 2);
+  if (v !== baseBox.value) baseBox.value = v;
+  const s = readScoring() || newScoring();
+  if (v === '') delete s.baseline; else s.baseline = +v;
+  s.teams.forEach(t => applyHandicap(s, t));
+  writeScoring(s);
+  s.teams.forEach(t => { const c = tbody.querySelector(`tr[data-id="${CSS.escape(t.id)}"] td.h`); if (c) c.textContent = t.handicap ?? ''; });
+});
+baseBox.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); baseBox.blur(); } });
+tbody.addEventListener('input', e => {
+  const tr = e.target.closest('tr'); if (!tr) return;
+  if (e.target.classList.contains('tn')) updateTeam(tr.dataset.id, t => t.name = e.target.value);
+  if (e.target.classList.contains('mem')) {
+    const v = e.target.value.replace(/\D/g, '').slice(0, 2);
+    if (v !== e.target.value) e.target.value = v;
+    updateTeam(tr.dataset.id, t => { if (v === '') delete t.members; else t.members = +v; });
+  }
+});
+tbody.addEventListener('focusin', e => { if (e.target.classList.contains('mem')) e.target.select(); });
+tbody.addEventListener('keydown', e => {   // Enter moves down the same column
+  if (e.key !== 'Enter' || e.target.tagName !== 'INPUT') return;
+  e.preventDefault();
+  const cls = e.target.classList.contains('tn') ? '.tn' : '.mem';
+  const next = e.target.closest('tr').nextElementSibling;
+  if (next) next.querySelector(cls).focus(); else document.getElementById('addTeam').click();
+});
+tbody.addEventListener('click', async e => {
+  const b = e.target.closest('.del'); if (!b) return;
+  const id = b.closest('tr').dataset.id, s = readScoring(); if (!s) return;
+  const t = s.teams.find(x => x.id === id); if (!t) return;
+  const scored = (t.scores || []).some(v => v !== null && v !== undefined && v !== '') || (t.bonus || []).some(v => +v > 0) || (t.handicap !== null && t.handicap !== undefined && t.handicap !== '');
+  if (!(await askConfirm(`Remove "${t.name || 'this team'}"?` + (scored ? '\n\nThis team has scores on the scoreboard. They will be removed too.' : ''), 'Remove'))) return;
+  const s2 = readScoring(); s2.teams = s2.teams.filter(x => x.id !== id); writeScoring(s2); renderTeams();
+});
+document.getElementById('addTeam').onclick = () => {
+  const s = readScoring() || newScoring();
+  const used = new Set(s.teams.map(t => t.color));
+  const color = PALETTE.find(c => !used.has(c)) || PALETTE[s.teams.length % PALETTE.length];
+  s.teams.push({ id: 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: 'Team ' + (s.teams.length + 1), color, handicap: null, scores: [], bonus: [], joker: -1 });
+  writeScoring(s); renderTeams();
+  const ins = tbody.querySelectorAll('.tn'); const last = ins[ins.length - 1]; last.focus(); last.select();
+};
+window.addEventListener('storage', e => {
+  if (e.key !== SKEY && e.key !== null) return;
+  showBaseline();
+  if (typingIn(document.activeElement) && tbody.contains(document.activeElement)) { sums((readScoring() || { teams: [] }).teams); return; }
+  renderTeams();
+});
+
+/* In-page confirm box (a browser confirm() would knock a full-screen leaderboard out of full screen) */
+function askConfirm(msg, okLabel) {
+  return new Promise(res => {
+    const d = document.createElement('dialog');
+    d.className = 'uidlg';
+    d.innerHTML = '<p class="uimsg"></p><div class="uirow"><button type="button" class="uino">Cancel</button><button type="button" class="uiyes"></button></div>';
+    d.querySelector('.uimsg').textContent = msg;
+    d.querySelector('.uiyes').textContent = okLabel || 'OK';
+    let done = false;
+    const finish = v => { if (done) return; done = true; try { d.close(); } catch {} d.remove(); res(v); };
+    d.querySelector('.uiyes').onclick = () => finish(true);
+    d.querySelector('.uino').onclick = () => finish(false);
+    d.addEventListener('cancel', e => { e.preventDefault(); finish(false); });
+    document.body.appendChild(d); d.showModal(); d.querySelector('.uiyes').focus();
+  });
+}
+
+load(); showTitle(); showBaseline(); renderTeams();
+</script>
+</body>
+</html>

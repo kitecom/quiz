@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Quiz</title>
+<link rel="icon" id="favicon" href="data:,">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --bg:#f6f5f1; --card:#fff; --line:#dedcd4; --text:#222; --muted:#6b6a65; --accent:#2f6fd6; --brand:#cc0099; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family: system-ui, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--text); font-size:17px; }
+  header { display:flex; flex-wrap:nowrap; gap:10px; align-items:center; padding:14px 20px; background:var(--card); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:2; }
+  header h1 { font-size:22px; margin:0 10px 0 0; font-weight:700; }
+  .rtag { margin-right:8px; }
+  #rname { font:inherit; font-size:22px; font-weight:700; padding:4px 8px; border:1px solid #c9c7bf; border-radius:6px; width:260px; }
+  #rname:focus { outline:2px solid var(--accent); outline-offset:-1px; }
+  header h1 small { color:var(--muted); font-weight:500; font-size:15px; margin-left:6px; }
+  .sw { display:flex; align-items:stretch; border:1px solid #c9c7bf; border-radius:8px; overflow:hidden; background:#fff; }
+  .swgo { border:none; border-radius:0; display:flex; align-items:center; padding:4px 10px; background:#fff; }
+  .swgo:hover { background:#f0efea; }
+  #swTime { font-size:16px; font-weight:700; font-variant-numeric:tabular-nums; min-width:38px; text-align:center; color:var(--muted); }
+  .sw.run #swTime { color:var(--text); }
+  .swlab { font-size:12px; color:var(--muted); }
+  .swstop { border:none; border-left:1px solid #e3e1d8; border-radius:0; padding:0 8px; color:#aaa; font-size:12px; background:#fff; }
+  .swstop:hover { color:#c44; background:#fdecea; }
+  .sbtn { font-size:14px; padding:7px 12px; border:1px solid #c9c7bf; background:#fff; border-radius:8px; text-decoration:none; color:var(--text); }
+  .sbtn:hover { background:#f0efea; }
+  .sbtn { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+  .sbtn:hover { background:#2559ad; border-color:#2559ad; }
+  .cbtn { flex:none; white-space:nowrap; font-size:14px; padding:7px 12px; border:1px solid #c9c7bf; background:#fff; border-radius:8px; text-decoration:none; color:var(--text); }
+  .cbtn:hover { background:#f0efea; }
+  body.round #loadQuiz, body.round #saveQuiz, body.round .cbtn { display:none; }
+  body:not(.round) #cwRound { display:none !important; }
+  nav { display:flex; flex-wrap:nowrap; gap:4px; min-width:0; flex:0 1 auto; overflow-x:auto; scrollbar-width:thin; }
+  header h1, header > button, header > a, .sw { flex:none; white-space:nowrap; }
+  header h1 { min-width:0; overflow:hidden; text-overflow:ellipsis; max-width:40vw; }
+  nav a { flex:none; white-space:nowrap; text-decoration:none; color:var(--muted); padding:5px 10px; border-radius:6px; border:1px solid transparent; font-size:14px; font-weight:600; }
+  nav a:hover { border-color:var(--line); background:#fafaf7; }
+  nav a.on { color:#fff; background:var(--brand); }
+  .spacer { flex:1; }
+  button { font:inherit; font-size:14px; padding:7px 12px; border:1px solid #c9c7bf; background:#fff; border-radius:8px; cursor:pointer; }
+  button:hover { background:#f0efea; }
+  button.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+  main { padding:18px 20px 60px; }
+  table { width:100%; border-collapse:collapse; background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  th, td { text-align:left; vertical-align:top; padding:12px 14px; border-bottom:1px solid #eeede8; line-height:1.45; }
+  th { font-size:13px; color:var(--muted); background:#fafaf7; font-weight:600; }
+  td.n { width:46px; color:var(--muted); font-weight:700; text-align:right; }
+  td.q { width:34%; }
+  td.a { width:17%; color:#1d6b3f; }
+  td.a, td.nt, td.xt { font-size:15px; font-weight:400; }
+  td.nt { width:17%; }
+  td.nt { color:#1d6b3f; }
+  td.xt { color:#1d6b3f; }
+  body.hideA tr:not(.shown) td.xt .txt { filter:blur(7px); user-select:none; }
+  body.hideA td.xt { cursor:pointer; }
+  body.hideA tr:not(.shown) td.a .txt, body.hideA tr:not(.shown) td.nt .txt { filter:blur(7px); user-select:none; }
+  body.hideA td.a, body.hideA td.nt { cursor:pointer; }
+  td .txt { transition:filter .2s; white-space:pre-wrap; }
+  td.nt .txt, td.xt .txt { white-space:normal; }
+  .intro { background:var(--card); border:1px solid var(--line); border-left:4px solid var(--brand); border-radius:10px; padding:12px 16px; margin-bottom:14px; font-size:16px; line-height:1.5; }
+  .intro .txt { white-space:normal; min-height:1.5em; }
+  .intro .txt p { margin:0 0 6px; }
+  .intro .txt ul, .intro .txt ol { margin:4px 0; padding-left:22px; }
+  .intro.editing .txt { outline:1px dashed #c9c7bf; border-radius:4px; padding:4px 6px; }
+  .intro.editing .txt:focus { outline:2px solid var(--accent); }
+  td.nt .txt ul, td.xt .txt ul, td.nt .txt ol, td.xt .txt ol { margin:4px 0; padding-left:20px; }
+  td.nt .txt p, td.xt .txt p { margin:0 0 6px; }
+  #fmtbar { position:absolute; z-index:5; display:none; gap:2px; background:#222; border-radius:7px; padding:3px; box-shadow:0 4px 12px rgba(0,0,0,.25); }
+  #fmtbar.show { display:flex; }
+  #fmtbar button { background:none; border:none; color:#fff; min-width:28px; height:26px; padding:0 6px; font-size:14px; border-radius:5px; }
+  #fmtbar button:hover { background:rgba(255,255,255,.18); }
+  #fmtbar button.on { background:rgba(255,255,255,.28); }
+  td.x { width:40px; text-align:center; white-space:nowrap; }
+  body.edit td.x { width:110px; }
+  .mv { border:none; background:none; color:#999; padding:2px 6px; display:none; font-size:15px; }
+  .mv:hover { color:var(--accent); background:none; }
+  body.edit .mv { display:inline-block; }
+  .grip { display:none; cursor:grab; color:#aaa; margin-right:6px; user-select:none; letter-spacing:-2px; }
+  body.edit .grip { display:inline; }
+  body.edit td.n { width:64px; }
+  tr.dragging { opacity:.4; }
+  tr.dropBefore td { box-shadow: inset 0 3px 0 var(--accent); }
+  tr.dropAfter td { box-shadow: inset 0 -3px 0 var(--accent); }
+  .del { border:none; background:none; color:#bbb; padding:2px 6px; display:none; }
+  .del:hover { color:#c44; background:none; }
+  body.edit .del { display:inline-block; }
+  body.edit td.q .txt, body.edit td.a .txt, body.edit td.nt .txt, body.edit td.xt .txt { outline:1px dashed #c9c7bf; border-radius:4px; padding:2px 4px; min-height:1.4em; }
+  body.edit td .txt:focus { outline:2px solid var(--accent); background:#fff; }
+  body.edit .txt:empty::before { content:attr(data-ph); color:#bbb; font-weight:400; }
+  .empty { text-align:center; color:var(--muted); padding:40px 20px; background:var(--card); border:1px dashed var(--line); border-radius:10px; }
+  .tools { display:flex; gap:8px; margin-top:12px; }
+  body:not(.edit) .tools { display:none; }
+  .index { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:12px; }
+  .card { position:relative; }
+  .card.dragging { opacity:.4; }
+  .card.dropBefore a { box-shadow: inset 4px 0 0 var(--accent); }
+  .card.dropAfter a { box-shadow: inset -4px 0 0 var(--accent); }
+  .cflags { position:absolute; bottom:8px; left:16px; display:flex; flex-direction:column; gap:4px; }
+  .cbon, .caud { display:flex; align-items:center; gap:6px; font-size:13px; color:var(--muted); cursor:pointer; user-select:none; }
+  .cbon input { width:16px; height:16px; margin:0; cursor:pointer; accent-color:var(--brand); }
+  .card.bonus .cbon { color:var(--brand); font-weight:600; }
+  .caud input { width:16px; height:16px; margin:0; cursor:pointer; accent-color:#2f6fd6; }
+  .card.audio .caud { color:#2f6fd6; font-weight:600; }
+  .caud, .cbon { white-space:nowrap; }
+  .cwgo { white-space:nowrap; flex:none; display:none; margin-left:6px; font-size:12px; padding:2px 8px; border:1px solid #2f6fd6; color:#2f6fd6; background:#fff; border-radius:6px; font-weight:600; }
+  .cwgo:hover { background:#2f6fd6; color:#fff; }
+  .card.audio .cwgo { display:inline-block; }
+  .index a { padding-bottom:64px !important; }
+  #cwRound { flex:none; white-space:nowrap; font-size:14px; padding:7px 12px; border:1px solid #2f6fd6; color:#2f6fd6; background:#fff; border-radius:8px; font-weight:600; }
+  #cwRound:hover { background:#2f6fd6; color:#fff; }
+  .badge { display:inline-block; font-size:12px; font-weight:600; color:#fff; background:var(--brand); border-radius:99px; padding:3px 10px; margin-left:10px; vertical-align:middle; }
+  .cdel { position:absolute; top:6px; right:6px; border:none; background:none; color:#bbb; padding:2px 6px; font-size:13px; }
+  .cdel:hover { color:#c44; background:none; }
+  .addcard { display:flex; align-items:center; justify-content:center; min-height:104px; border:1px dashed #c9c7bf; border-radius:10px; background:transparent; color:var(--muted); font-size:15px; font-weight:600; cursor:pointer; }
+  .addcard:hover { border-color:var(--brand); color:var(--brand); background:var(--card); }
+  .cmv { position:absolute; top:6px; right:30px; display:flex; gap:2px; }
+  .cmv button { border:none; background:none; color:#aaa; padding:2px 6px; font-size:12px; }
+  .cmv button:hover { color:var(--accent); background:none; }
+  .index a { display:block; padding:16px; background:var(--card); border:1px solid var(--line); border-radius:10px; text-decoration:none; color:var(--text); }
+  .index a:hover { border-color:var(--brand); }
+  .index a b { display:block; font-size:18px; }
+  .index a span { color:var(--muted); font-size:14px; }
+  .hint { color:var(--muted); font-size:13px; margin-top:12px; line-height:1.5; }
+  dialog { border:1px solid var(--line); border-radius:12px; padding:20px; width:min(620px, 94vw); }
+  dialog textarea { width:100%; height:280px; font:inherit; font-size:14px; padding:8px; border:1px solid #c9c7bf; border-radius:6px; }
+  dialog .row { display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
+  dialog.uidlg { border:1px solid #dedcd4; border-radius:12px; padding:20px 22px; width:min(440px, 92vw); color:#222; background:#fff; font-family:system-ui, "Segoe UI", Roboto, sans-serif; }
+  dialog.uidlg::backdrop { background:rgba(0,0,0,.35); }
+  dialog.uidlg .uimsg { margin:0 0 16px; white-space:pre-line; line-height:1.45; font-size:15px; }
+  dialog.uidlg .uirow { display:flex; gap:8px; justify-content:flex-end; }
+  dialog.uidlg button { font:inherit; font-size:14px; padding:8px 16px; border:1px solid #c9c7bf; background:#fff; border-radius:8px; cursor:pointer; }
+  dialog.uidlg .uiyes { background:#2f6fd6; border-color:#2f6fd6; color:#fff; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="h">Quiz</h1>
+  <nav id="nav"></nav>
+  <span class="spacer"></span>
+  <div class="sw" id="sw" title="Time since you last clicked. Click (or press T) after asking each question to restart from 0:00">
+    <button id="swGo" class="swgo" title="Click to start. Click again (or press T) after each question to restart from 0:00"><span id="swTime">0:00</span></button>
+    <button id="swStop" class="swstop" title="Stop and clear the timer">■</button>
+  </div>
+  <button id="loadQuiz" title="Load a quiz saved with Save quiz. Replaces the teams, rounds, scores, questions and start page notes here now">Load quiz</button>
+  <input type="file" id="loadFile" accept=".json,application/json" style="display:none">
+  <button id="saveQuiz" title="Save the whole quiz (title, teams, rounds, scores, questions, start page notes and settings) as a file. It's saved like any download, to your Downloads folder unless the browser asks where to save">Save quiz</button>
+  <a href="quiz_files/cartwall.html" target="quizCartwall" class="cbtn" id="cwMain" title="Open the cartwall in a window on the right of the screen, or bring it forward if it's already open">Cartwall</a>
+  <button id="cwRound" style="display:none" title="Open the cartwall at this round's page">Cartwall ▸</button>
+  <a href="quiz_files/scoreboard.html" target="quizScoring" class="sbtn" title="Open the scoreboard. Goes to its tab if it's already open">Scoreboard</a>
+  <button id="toggleA" title="Blur the answers and notes. Click one to show that question's">Hide answers</button>
+  <button id="toggleEdit">Edit</button>
+</header>
+<main id="main"></main>
+
+<dialog id="pasteDlg">
+  <strong>Paste questions</strong>
+  <p class="hint" style="margin-top:4px">Copy up to four columns from Excel (question, answer, notes, extended notes) and paste them here. Both notes columns are optional. Paste the question text itself first, without a question-number column.</p>
+  <textarea id="pasteText"></textarea>
+  <div class="row">
+    <button id="pasteCancel">Cancel</button>
+    <button id="pasteAdd">Add to round</button>
+    <button id="pasteReplace" class="on">Replace round</button>
+  </div>
+</dialog>
+
+<script>
+/* In-page confirm / message boxes. The browser's own confirm() and alert() pop-ups make Chrome take
+   other windows (like the leaderboard on the projector) out of full screen, so these are used instead. */
+function uiDialog(msg, okLabel, cancelLabel) {
+  return new Promise(res => {
+    const d = document.createElement('dialog');
+    d.className = 'uidlg';
+    d.innerHTML = '<p class="uimsg"></p><div class="uirow">' + (cancelLabel ? '<button type="button" class="uino"></button>' : '') + '<button type="button" class="uiyes"></button></div>';
+    d.querySelector('.uimsg').textContent = msg;
+    d.querySelector('.uiyes').textContent = okLabel;
+    if (cancelLabel) d.querySelector('.uino').textContent = cancelLabel;
+    let done = false;
+    const finish = v => { if (done) return; done = true; try { d.close(); } catch (e) {} d.remove(); res(v); };
+    d.querySelector('.uiyes').onclick = () => finish(true);
+    if (cancelLabel) d.querySelector('.uino').onclick = () => finish(false);
+    d.addEventListener('cancel', e => { e.preventDefault(); finish(false); });
+    document.body.appendChild(d);
+    d.showModal();
+    d.querySelector('.uiyes').focus();
+  });
+}
+const askConfirm = (msg, ok = 'OK') => uiDialog(msg, ok, 'Cancel');
+const tell = msg => uiDialog(msg, 'OK', null);
+
+const QKEY = 'quizQuestions';
+const SKEY = 'quizScoringState';
+const params = new URLSearchParams(location.search);
+const ri = params.has('r') ? Math.max(0, parseInt(params.get('r'), 10) - 1) : -1;
+if (ri >= 0) document.body.classList.add('round');
+try { if (!window.name) window.name = ri < 0 ? 'quizQuestionsIndex' : 'quizRound' + (ri + 1); } catch {}
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function rounds() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SKEY));
+    if (s && s.rounds && s.rounds.length) return s.rounds.map(r => typeof r === 'string' ? r : r.name);
+  } catch {}
+  try { const n = JSON.parse(localStorage.getItem('quizRoundNames')); if (n && n.length) return n; } catch {}
+  return ['R1','R2','R3','R4','R5','R6'];
+}
+function audioFlags() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SKEY));
+    if (s && s.rounds) return s.rounds.map(r => typeof r === 'object' && !!r.audio);
+  } catch {}
+  try { return JSON.parse(localStorage.getItem('quizRoundAudio')) || []; } catch { return []; }
+}
+function setAudio(i, on) {
+  let s = null; try { s = JSON.parse(localStorage.getItem(SKEY)); } catch {}
+  if (s && s.rounds) {
+    while (s.rounds.length <= i) s.rounds.push({ name: 'R' + (s.rounds.length + 1), bonus: false });
+    if (typeof s.rounds[i] === 'string') s.rounds[i] = { name: s.rounds[i], bonus: false };
+    s.rounds[i].audio = on;
+    localStorage.setItem(SKEY, JSON.stringify(s));
+  } else {
+    const a = audioFlags(); while (a.length <= i) a.push(false); a[i] = on;
+    localStorage.setItem('quizRoundAudio', JSON.stringify(a));
+  }
+}
+/* Open the cartwall (or bring its tab forward) at the page whose name starts "R<n>".
+   If it's already open it is told to switch page rather than reloaded, so the audio stays armed. */
+const cwbc = ('BroadcastChannel' in window) ? new BroadcastChannel('quiz-cartwall') : null;
+function pingCartwall(ms) {
+  return new Promise(res => {
+    if (!cwbc) return res(false);
+    let done = false;
+    const on = e => { if (e.data && e.data.type === 'cartwallPong') { done = true; cwbc.removeEventListener('message', on); res(true); } };
+    cwbc.addEventListener('message', on);
+    cwbc.postMessage({ type: 'cartwallPing' });
+    setTimeout(() => { if (!done) { cwbc.removeEventListener('message', on); res(false); } }, ms);
+  });
+}
+function cwNote(msg) {
+  let t = document.getElementById('cwNote');
+  if (!t) { t = document.createElement('div'); t.id = 'cwNote'; t.style.cssText = 'position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:8px 14px;border-radius:8px;font-size:14px;z-index:9;transition:opacity .3s'; document.body.appendChild(t); }
+  t.textContent = msg; t.style.opacity = 1; clearTimeout(t._h); t._h = setTimeout(() => t.style.opacity = 0, 3000);
+}
+/* Open the cartwall as its own window on the right-hand half of the screen */
+function openCartwallWindow(url) {
+  const sc = window.screen || {};
+  const aw = sc.availWidth || 1280, ah = sc.availHeight || 800;
+  const ax = (sc.availLeft !== undefined ? sc.availLeft : 0), ay = (sc.availTop !== undefined ? sc.availTop : 0);
+  const w = Math.round(aw / 2), left = ax + aw - w;
+  const feats = `popup=yes,left=${left},top=${ay},width=${w},height=${ah}`;
+  const win = window.open(url, 'quizCartwall', feats);
+  if (!win) { window.open(url, 'quizCartwall'); cwNote('Pop-ups are blocked, so the cartwall opened as a tab. Allow pop-ups for this page to get the side window'); return; }
+  try { win.moveTo(left, ay); win.resizeTo(w, ah); } catch {}
+  cwNote('Cartwall opened on the right. Press Win + ← on this window to put the quiz on the left');
+}
+async function openCartwall(i) {
+  const prefix = (i === null || i === undefined) ? '' : 'R' + (i + 1);
+  const url = new URL('quiz_files/cartwall.html' + (prefix ? '?page=' + encodeURIComponent(prefix) : ''), location.href).href;
+  const alive = await pingCartwall(250);
+  if (!alive) { openCartwallWindow(url); return; }
+  const msg = { type: 'cartwallPage', prefix };
+  if (prefix) cwbc.postMessage(msg);
+  let w = null;
+  try { w = window.open('', 'quizCartwall'); } catch {}
+  let blank = false;
+  try { blank = !!w && (!w.location.href || w.location.href === 'about:blank'); } catch {}
+  if (blank) { try { w.close(); } catch {} cwNote(prefix ? `Cartwall switched to ${prefix}. It's open in another tab` : `The cartwall is already open in another tab`); return; }
+  if (w) { try { w.focus(); } catch {} }
+}
+function bonusFlags() {
+  try {
+    const s = JSON.parse(localStorage.getItem(SKEY));
+    if (s && s.rounds) return s.rounds.map(r => typeof r === 'object' && !!r.bonus);
+  } catch {}
+  try { return JSON.parse(localStorage.getItem('quizRoundBonus')) || []; } catch { return []; }
+}
+async function setBonus(i, on) {
+  let s = null; try { s = JSON.parse(localStorage.getItem(SKEY)); } catch {}
+  if (s && s.rounds) {
+    while (s.rounds.length <= i) s.rounds.push({ name: 'R' + (s.rounds.length + 1), bonus: false });
+    if (typeof s.rounds[i] === 'string') s.rounds[i] = { name: s.rounds[i], bonus: false };
+    if (!on && (s.teams || []).some(t => Number((t.bonus || [])[i]) && (t.bonus || [])[i] !== null)) {
+      if (!(await askConfirm(`Some teams already have bonus points in "${s.rounds[i].name}". Turn bonus off? Those points will stop counting.`, 'Turn off'))) return false;
+    }
+    s.rounds[i].bonus = on;
+    localStorage.setItem(SKEY, JSON.stringify(s));
+  } else {
+    const b = bonusFlags(); while (b.length <= i) b.push(false); b[i] = on;
+    localStorage.setItem('quizRoundBonus', JSON.stringify(b));
+  }
+  return true;
+}
+function roundLabel(i, name) {
+  const tag = 'R' + (i + 1), n = (name || '').trim();
+  return (!n || /^R\d+$/i.test(n)) ? tag : `${tag} – ${n}`;
+}
+function tabTitle(name) {
+  const tag = 'R' + (ri + 1);
+  const n = (name || '').trim();
+  const base = (!n || /^R\d+$/i.test(n)) ? tag : n;
+  return bonusFlags()[ri] ? base + ' \u{1D5D5}\u{1D5E3}' : base;
+}
+/* Tab icon: the round number on a grey square, or magenta for audio rounds (bonus rounds have the BP suffix instead) */
+function setFavicon() {
+  const audio = ri >= 0 && !!audioFlags()[ri];
+  const label = ri >= 0 ? String(ri + 1) : 'Q';
+  const fill = ri < 0 ? '#2f6fd6' : audio ? '#cc0099' : '#6b6a65';
+  const fs = label.length > 1 ? 19 : 24;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="7" fill="${fill}"/>` +
+    `<text x="16" y="17" text-anchor="middle" dominant-baseline="central" font-family="Segoe UI, Arial, sans-serif" font-weight="700" font-size="${fs}" fill="#fff">${label}</text>` +
+    `</svg>`;
+  document.getElementById('favicon').href = 'data:image/svg+xml,' + encodeURIComponent(svg);
+}
+function renameRound(i, name) {
+  try {
+    const s = JSON.parse(localStorage.getItem(SKEY));
+    if (s && s.rounds) {
+      while (s.rounds.length <= i) s.rounds.push({ name: 'R' + (s.rounds.length + 1), bonus: false });
+      if (typeof s.rounds[i] === 'string') s.rounds[i] = { name, bonus: false }; else s.rounds[i].name = name;
+      localStorage.setItem(SKEY, JSON.stringify(s));
+      return;
+    }
+  } catch {}
+  const n = rounds();
+  while (n.length <= i) n.push('R' + (n.length + 1));
+  n[i] = name;
+  localStorage.setItem('quizRoundNames', JSON.stringify(n));
+}
+function loadQ() { try { return JSON.parse(localStorage.getItem(QKEY)) || {}; } catch { return {}; } }
+function saveQ() { try { localStorage.setItem(QKEY, JSON.stringify(all)); } catch {} }
+let all = loadQ();
+const list = () => (all[ri] = all[ri] || []);
+
+function nav() {
+  const rs = rounds();
+  document.getElementById('nav').innerHTML =
+    `<a href="quiz.html" target="quizQuestionsIndex" class="${ri < 0 ? 'on' : ''}">All</a>` +
+    rs.map((r, i) => `<a href="quiz.html?r=${i + 1}" target="quizRound${i + 1}" class="${i === ri ? 'on' : ''}" title="${esc(roundLabel(i, r))}">R${i + 1}</a>`).join('');
+}
+
+function renderIndex() {
+  document.getElementById('h').textContent = 'Quiz';
+  document.title = 'Quiz';
+  setFavicon();
+  document.getElementById('toggleA').style.display = 'none';
+  document.getElementById('toggleEdit').style.display = 'none';
+  const rs = rounds();
+  document.getElementById('main').innerHTML =
+    `<div class="index">${rs.map((r, i) => {
+      const n = (all[i] || []).length, bon = !!bonusFlags()[i], aud = !!audioFlags()[i];
+      return `<div class="card${bon ? ' bonus' : ''}${aud ? ' audio' : ''}" draggable="true" data-r="${i}"><div class="cflags"><label class="cbon" title="Bonus points available in this round. Same as the bonus tick on the scoreboard"><input type="checkbox" class="bon" data-r="${i}" ${bon ? 'checked' : ''}> Bonus points</label><label class="caud" title="This round plays sounds from the cartwall"><input type="checkbox" class="aud" data-r="${i}" ${aud ? 'checked' : ''}> Audio round<button class="cwgo" data-r="${i}" title="Open the cartwall at the page starting R${i + 1}">Cartwall ▸</button></label></div><a href="quiz.html?r=${i + 1}" target="quizRound${i + 1}" draggable="false"><b>${esc(roundLabel(i, r))}</b><span>${n ? n + ' question' + (n === 1 ? '' : 's') : 'No questions yet'}</span></a>
+        <button class="cdel" data-r="${i}" title="Remove this round">✕</button>
+        <div class="cmv"><button data-r="${i}" data-d="-1" title="Move round earlier">◀</button><button data-r="${i}" data-d="1" title="Move round later">▶</button></div></div>`;
+    }).join('')}<button class="addcard" id="addRound" title="Add a round at the end">+ Add round</button></div>
+    <div class="tools" style="display:flex"><button id="openAll" class="on">Open every round in its own tab</button></div>
+`;
+  document.getElementById('openAll').onclick = () => rs.forEach((r, i) => window.open(`quiz.html?r=${i + 1}`, `quizRound${i + 1}`));
+  const idx = document.querySelector('.index');
+  idx.querySelectorAll('input.aud').forEach(cb => cb.onchange = () => {
+    setAudio(+cb.dataset.r, cb.checked);
+    cb.closest('.card').classList.toggle('audio', cb.checked);
+  });
+  idx.querySelectorAll('.cwgo').forEach(b => b.onclick = e => { e.preventDefault(); e.stopPropagation(); openCartwall(+b.dataset.r); });
+  idx.querySelectorAll('input.bon').forEach(cb => cb.onchange = async () => {
+    if (!(await setBonus(+cb.dataset.r, cb.checked))) { cb.checked = !cb.checked; return; }
+    cb.closest('.card').classList.toggle('bonus', cb.checked);
+  });
+  document.getElementById('addRound').onclick = () => { addRound(); };
+  idx.querySelectorAll('.cdel').forEach(b => b.onclick = e => { e.preventDefault(); removeRound(+b.dataset.r); });
+  idx.querySelectorAll('.cmv button').forEach(b => b.onclick = e => { e.preventDefault(); moveRoundStorage(+b.dataset.r, +b.dataset.r + +b.dataset.d); });
+  let from = -1;
+  const clear = () => idx.querySelectorAll('.dropBefore, .dropAfter').forEach(c => c.classList.remove('dropBefore', 'dropAfter'));
+  idx.addEventListener('dragstart', e => { const c = e.target.closest('.card'); if (!c) return; from = +c.dataset.r; c.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(from)); });
+  idx.addEventListener('dragover', e => { const c = e.target.closest('.card'); if (from < 0 || !c) return; e.preventDefault(); const r = c.getBoundingClientRect(); clear(); c.classList.add(e.clientX > r.left + r.width / 2 ? 'dropAfter' : 'dropBefore'); });
+  idx.addEventListener('drop', e => { const c = e.target.closest('.card'); if (from < 0 || !c) return; e.preventDefault(); let to = +c.dataset.r + (c.classList.contains('dropAfter') ? 1 : 0); if (to > from) to--; const f = from; from = -1; moveRoundStorage(f, to); });
+  idx.addEventListener('dragend', () => { from = -1; clear(); idx.querySelectorAll('.dragging').forEach(c => c.classList.remove('dragging')); });
+}
+
+function renumber(rs) { return rs.map((r, i) => {
+  const nm = typeof r === 'string' ? r : r.name;
+  const fixed = /^R\d+$/i.test((nm || '').trim()) ? 'R' + (i + 1) : nm;
+  return typeof r === 'string' ? fixed : { ...r, name: fixed };
+}); }
+/* Round intro: kept on the round itself (in the scoring data), so it moves with the round and is saved with the quiz */
+function introOf(i) { const s = readScoring(); return (s && s.rounds[i] && typeof s.rounds[i] === 'object' && s.rounds[i].intro) || ''; }
+function setIntro(i, html) {
+  let s = readScoring();
+  if (!s) {   // scoreboard not opened yet: start the scoring data the same way it would
+    const pal = ['#7F77DD', '#1D9E75', '#D85A30', '#D4537E'], b = bonusFlags(), a = audioFlags();
+    s = { title: 'Quiz night', live: false, rounds: rounds().map((name, k) => ({ name, bonus: !!b[k], audio: !!a[k] })),
+          teams: [1, 2, 3, 4].map(n => ({ id: 't' + Date.now().toString(36) + n, name: 'Team ' + n, color: pal[n - 1], handicap: null, scores: [], bonus: [], joker: -1 })),
+          lastRanks: null, useJoker: true };
+  }
+  while (s.rounds.length <= i) s.rounds.push({ name: 'R' + (s.rounds.length + 1), bonus: false });
+  if (typeof s.rounds[i] === 'string') s.rounds[i] = { name: s.rounds[i], bonus: false };
+  if (html) s.rounds[i].intro = html; else delete s.rounds[i].intro;
+  localStorage.setItem(SKEY, JSON.stringify(s));
+}
+function readScoring() { try { const s = JSON.parse(localStorage.getItem(SKEY)); return s && s.rounds ? s : null; } catch { return null; } }
+
+function addRound() {
+  const s = readScoring(), n = rounds().length;
+  all = loadQ();
+  if (all[n] && all[n].length) delete all[n];
+  saveQ();
+  if (s) {
+    s.rounds.push({ name: 'R' + (n + 1), bonus: false });
+    localStorage.setItem(SKEY, JSON.stringify(s));
+  } else {
+    const names = rounds(); names.push('R' + (n + 1));
+    localStorage.setItem('quizRoundNames', JSON.stringify(names));
+  }
+  nav(); renderIndex();
+}
+
+async function removeRound(i) {
+  const s = readScoring(), names = rounds(), n = names.length;
+  if (n <= 1) { tell('A quiz needs at least one round.'); return; }
+  all = loadQ();
+  const nq = (all[i] || []).length;
+  const hasScores = !!s && (s.teams || []).some(t => [(t.scores || [])[i], (t.bonus || [])[i]].some(v => v !== null && v !== undefined && v !== '' && Number(v) !== 0));
+  const what = [hasScores ? 'scores' : '', nq ? `${nq} question${nq === 1 ? '' : 's'}` : ''].filter(Boolean).join(' and ');
+  const label = roundLabel(i, names[i]);
+  if (!(await askConfirm(what ? `Remove ${label}? Its ${what} will be deleted. Later rounds move up one place.` : `Remove ${label}? Later rounds move up one place.`, 'Remove'))) return;
+  const nqObj = {};
+  Object.keys(all).forEach(k => { const ki = +k; if (ki < i) nqObj[ki] = all[k]; else if (ki > i) nqObj[ki - 1] = all[k]; });
+  all = nqObj; saveQ();
+  if (s) {
+    s.rounds.splice(i, 1); s.rounds = renumber(s.rounds);
+    (s.teams || []).forEach(t => {
+      (t.scores || []).splice(i, 1); (t.bonus || []).splice(i, 1);
+      if (t.joker === i) t.joker = -1; else if (t.joker > i) t.joker--;
+    });
+    localStorage.setItem(SKEY, JSON.stringify(s));
+  } else {
+    names.splice(i, 1); localStorage.setItem('quizRoundNames', JSON.stringify(renumber(names)));
+    const b = bonusFlags(); b.splice(i, 1); localStorage.setItem('quizRoundBonus', JSON.stringify(b));
+  }
+  nav(); renderIndex();
+}
+
+function moveRoundStorage(from, to) {
+  const n = rounds().length;
+  if (to < 0 || to >= n || from === to) return;
+  const order = [...Array(n).keys()];
+  const [x] = order.splice(from, 1); order.splice(to, 0, x);
+  const inv = {}; order.forEach((old, ni) => inv[old] = ni);
+  let s = null; try { s = JSON.parse(localStorage.getItem(SKEY)); } catch {}
+  if (s && s.rounds) {
+    s.rounds = renumber(order.map(o => s.rounds[o]));
+    (s.teams || []).forEach(t => {
+      t.scores = order.map(o => (t.scores || [])[o] ?? null);
+      t.bonus = order.map(o => (t.bonus || [])[o] ?? null);
+      if (t.joker >= 0) t.joker = inv[t.joker] ?? -1;
+    });
+  } else {
+    const names = rounds();
+    localStorage.setItem('quizRoundNames', JSON.stringify(renumber(order.map(o => names[o]))));
+  }
+  all = loadQ();
+  const nq = {};
+  order.forEach((o, ni) => { if (all[o]) nq[ni] = all[o]; });
+  Object.keys(all).forEach(k => { if (+k >= n) nq[k] = all[k]; });
+  all = nq;
+  saveQ();
+  if (s && s.rounds) localStorage.setItem(SKEY, JSON.stringify(s));
+  nav(); renderIndex();
+}
+
+function renderRound() {
+  const rs = rounds();
+  const name = rs[ri] ?? ('R' + (ri + 1));
+  const qs = list();
+  const editing = document.body.classList.contains('edit');
+  document.getElementById('h').innerHTML = editing
+    ? `<span class="rtag">R${ri + 1}</span><input id="rname" value="${esc(name)}" placeholder="Round name" title="Round name, shown on this tab and on the scoreboard">`
+    : `${esc(roundLabel(ri, name))}${bonusFlags()[ri] ? '<span class="badge">Bonus round</span>' : ''}`;
+  const cwr = document.getElementById('cwRound');
+  cwr.style.display = audioFlags()[ri] ? '' : 'none';
+  cwr.textContent = `Cartwall R${ri + 1} ▸`;
+  document.title = tabTitle(name);
+  setFavicon();
+  const rn = document.getElementById('rname');
+  if (rn) rn.addEventListener('input', () => {
+    const v = rn.value.trim() || ('R' + (ri + 1));
+    renameRound(ri, v); document.title = tabTitle(v); nav();
+  });
+  const intro = introOf(ri);
+  const introHTML = (editing || (intro && intro.replace(/<[^>]*>/g, '').trim()))
+    ? `<div class="intro${editing ? ' editing' : ''}"><div class="txt" id="introTxt" data-k="intro" data-ph="Round intro (optional). Anything you want to say before the first question" ${editing ? 'contenteditable="true"' : ''}>${rich(intro)}</div></div>`
+    : '';
+  let h = '';
+  if (!qs.length && !editing) {
+    h = `<div class="empty">No questions in this round yet.<br><br><button id="startEdit" class="on">Add questions</button></div>`;
+  } else {
+    h = `<table><thead><tr><th></th><th>Question</th><th>Answer</th><th>Notes</th><th>Extended notes</th><th></th></tr></thead><tbody>`;
+    qs.forEach((x, i) => {
+      h += `<tr data-i="${i}" ${editing ? 'draggable="true"' : ''}><td class="n"><span class="grip" title="Drag to reorder">⋮⋮</span>${i + 1}</td>
+        <td class="q"><div class="txt" data-i="${i}" data-k="q" data-ph="Question" ${editing ? 'contenteditable="plaintext-only"' : ''}>${esc(x.q)}</div></td>
+        <td class="a"><div class="txt" data-i="${i}" data-k="a" data-ph="Answer" ${editing ? 'contenteditable="plaintext-only"' : ''}>${esc(x.a)}</div></td>
+        <td class="nt"><div class="txt" data-i="${i}" data-k="n" data-ph="Notes" ${editing ? 'contenteditable="true"' : ''}>${rich(x.n)}</div></td>
+        <td class="xt"><div class="txt" data-i="${i}" data-k="x" data-ph="Extended notes" ${editing ? 'contenteditable="true"' : ''}>${rich(x.x)}</div></td>
+        <td class="x"><button class="mv" data-i="${i}" data-d="-1" title="Move up">▲</button><button class="mv" data-i="${i}" data-d="1" title="Move down">▼</button><button class="del" data-i="${i}" title="Delete question">✕</button></td></tr>`;
+    });
+    h += `</tbody></table>`;
+  }
+  h += `<div class="tools"><button id="addQ">+ Add question</button><button id="paste">Paste from Excel</button><span class="spacer"></span><button id="clearR">Clear round</button></div>`;
+  if (editing) h += `<p class="hint">Type the round name at the top left. It shows on this tab and on the scoreboard. Click any question, answer or note to edit it. In questions and answers, Enter moves to the next box. In the notes columns, Enter starts a new line and Tab moves on. Format notes with the toolbar or Ctrl+B, Ctrl+I and Ctrl+U. Drag a row by its ⋮⋮ handle, or use ▲ ▼, to reorder. Numbers always stay in order. Changes save as you type.</p>`;
+  document.getElementById('main').innerHTML = introHTML + h;
+
+  const se = document.getElementById('startEdit');
+  if (se) se.onclick = () => setEdit(true);
+  document.getElementById('addQ').onclick = () => {
+    list().push({ q: '', a: '', n: '', x: '' }); saveQ(); renderRound();
+    const boxes = document.querySelectorAll('td.q .txt'); boxes[boxes.length - 1]?.focus();
+  };
+  document.getElementById('paste').onclick = () => { document.getElementById('pasteText').value = ''; dlg.showModal(); };
+  document.getElementById('clearR').onclick = async () => {
+    if (list().length && await askConfirm(`Delete all questions in ${name}?`, 'Delete')) { all[ri] = []; saveQ(); renderRound(); }
+  };
+}
+
+const main = document.getElementById('main');
+main.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'introTxt') { setIntro(ri, cleanHTML(t.innerHTML)); return; }
+  if (!t.classList.contains('txt')) return;
+  const k = t.dataset.k;
+  list()[+t.dataset.i][k] = (k === 'n' || k === 'x') ? cleanHTML(t.innerHTML) : t.innerText.replace(/\n+$/, '');
+  saveQ();
+});
+/* Notes and extended notes paste as plain text, keeping line breaks */
+main.addEventListener('paste', e => {
+  const t = e.target.closest && e.target.closest('td.nt .txt, td.xt .txt, #introTxt');
+  if (!t) return;
+  e.preventDefault();
+  const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+  document.execCommand('insertHTML', false, esc(text).replace(/\r?\n/g, '<br>'));
+});
+main.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey && e.target.classList.contains('txt') && e.target.dataset.k !== 'n' && e.target.dataset.k !== 'x' && e.target.dataset.k !== 'intro') {
+    e.preventDefault();
+    const boxes = [...document.querySelectorAll('.txt[contenteditable]')];
+    const next = boxes[boxes.indexOf(e.target) + 1];
+    if (next) next.focus(); else document.getElementById('addQ').click();
+  }
+});
+main.addEventListener('click', e => {
+  const t = e.target;
+  if (t.classList.contains('del')) {
+    list().splice(+t.dataset.i, 1); saveQ(); renderRound(); return;
+  }
+  if (t.classList.contains('mv')) {
+    const i = +t.dataset.i, j = i + +t.dataset.d, L = list();
+    if (j < 0 || j >= L.length) return;
+    [L[i], L[j]] = [L[j], L[i]]; saveQ(); renderRound();
+    document.querySelector(`.mv[data-i="${j}"][data-d="${t.dataset.d}"]`)?.focus();
+    return;
+  }
+  const a = t.closest('td.a, td.nt, td.xt');
+  if (a && document.body.classList.contains('hideA') && !document.body.classList.contains('edit')) {
+    const i = a.closest('tr').dataset.i, on = !a.closest('tr').classList.contains('shown');
+    document.querySelectorAll(`tr[data-i="${i}"]`).forEach(tr => tr.classList.toggle('shown', on));
+  }
+});
+
+let dragFrom = -1;
+main.addEventListener('dragstart', e => {
+  const tr = e.target.closest && e.target.closest('tr[data-i]');
+  if (!tr || !document.body.classList.contains('edit')) return;
+  if (document.activeElement && document.activeElement.isContentEditable) { e.preventDefault(); return; }
+  dragFrom = +tr.dataset.i; tr.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(dragFrom));
+});
+function clearDrop() { document.querySelectorAll('.dropBefore, .dropAfter').forEach(r => r.classList.remove('dropBefore', 'dropAfter')); }
+main.addEventListener('dragover', e => {
+  const tr = e.target.closest && e.target.closest('tr[data-i]');
+  if (dragFrom < 0 || !tr) return;
+  e.preventDefault();
+  const r = tr.getBoundingClientRect(), after = e.clientY > r.top + r.height / 2;
+  clearDrop(); tr.classList.add(after ? 'dropAfter' : 'dropBefore');
+});
+main.addEventListener('drop', e => {
+  const tr = e.target.closest && e.target.closest('tr[data-i]');
+  if (dragFrom < 0 || !tr) return;
+  e.preventDefault();
+  let to = +tr.dataset.i + (tr.classList.contains('dropAfter') ? 1 : 0);
+  const L = list(), [item] = L.splice(dragFrom, 1);
+  if (to > dragFrom) to--;
+  L.splice(to, 0, item);
+  dragFrom = -1; saveQ(); renderRound();
+});
+main.addEventListener('dragend', () => { dragFrom = -1; clearDrop(); document.querySelectorAll('.dragging').forEach(r => r.classList.remove('dragging')); });
+
+/* ---------- Simple formatting for the notes columns ---------- */
+const ALLOWED = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'BR', 'DIV', 'P', 'UL', 'OL', 'LI']);
+function cleanHTML(html) {
+  const tpl = document.createElement('template');
+  tpl.innerHTML = html;
+  const walk = node => {
+    [...node.childNodes].forEach(c => {
+      if (c.nodeType === 1) {
+        if (/^(SCRIPT|STYLE|IFRAME|OBJECT|EMBED|META|LINK)$/.test(c.tagName)) { c.remove(); return; }
+        walk(c);
+        if (!ALLOWED.has(c.tagName)) { c.replaceWith(...c.childNodes); return; }
+        [...c.attributes].forEach(a => c.removeAttribute(a.name));
+      } else if (c.nodeType !== 3) c.remove();
+    });
+  };
+  walk(tpl.content);
+  const out = tpl.innerHTML.replace(/^(\s|<br>)+|(\s|<br>)+$/g, '');
+  return /^(<div>(<br>)?<\/div>)*$/.test(out) ? '' : out;
+}
+function rich(v) {
+  if (!v) return '';
+  return /<[a-z][^>]*>/i.test(v) ? cleanHTML(v) : esc(v).replace(/\r?\n/g, '<br>');
+}
+const fmtbar = document.createElement('div');
+fmtbar.id = 'fmtbar';
+fmtbar.innerHTML = '<button data-c="bold" title="Bold (Ctrl+B)"><b>B</b></button><button data-c="italic" title="Italic (Ctrl+I)"><i>I</i></button><button data-c="underline" title="Underline (Ctrl+U)"><u>U</u></button><button data-c="insertUnorderedList" title="Bullet list">•</button><button data-c="removeFormat" title="Remove formatting">⌫</button>';
+document.body.appendChild(fmtbar);
+let fmtTarget = null;
+function placeFmt() {
+  if (!fmtTarget) return;
+  const r = fmtTarget.getBoundingClientRect();
+  fmtbar.style.left = (window.scrollX + r.left) + 'px';
+  fmtbar.style.top = (window.scrollY + r.top - fmtbar.offsetHeight - 6) + 'px';
+  fmtbar.querySelectorAll('button').forEach(b => { try { b.classList.toggle('on', document.queryCommandState(b.dataset.c)); } catch {} });
+}
+fmtbar.addEventListener('mousedown', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  e.preventDefault();
+  document.execCommand(b.dataset.c, false, null);
+  if (fmtTarget) fmtTarget.dispatchEvent(new Event('input', { bubbles: true }));
+  placeFmt();
+});
+main.addEventListener('focusin', e => {
+  const t = e.target.closest && e.target.closest('td.nt .txt[contenteditable], td.xt .txt[contenteditable], #introTxt[contenteditable]');
+  if (!t) return;
+  fmtTarget = t; fmtbar.classList.add('show'); placeFmt();
+});
+main.addEventListener('focusout', e => {
+  setTimeout(() => {
+    const a = document.activeElement;
+    if (!a || !a.closest || !a.closest('td.nt .txt[contenteditable], td.xt .txt[contenteditable], #introTxt[contenteditable]')) { fmtbar.classList.remove('show'); fmtTarget = null; }
+  }, 0);
+});
+document.addEventListener('selectionchange', () => { if (fmtTarget) placeFmt(); });
+window.addEventListener('scroll', placeFmt, { passive: true });
+
+function setEdit(on) {
+  document.body.classList.toggle('edit', on);
+  const b = document.getElementById('toggleEdit');
+  b.textContent = on ? 'Done' : 'Edit';
+  b.classList.toggle('on', on);
+  if (!on) { all[ri] = list().filter(x => (x.q || '').trim() || (x.a || '').trim() || (x.n || '').trim() || (x.x || '').trim()); saveQ(); }
+  renderRound();
+}
+document.getElementById('toggleEdit').onclick = () => setEdit(!document.body.classList.contains('edit'));
+document.getElementById('toggleA').onclick = () => {
+  const on = document.body.classList.toggle('hideA');
+  const b = document.getElementById('toggleA');
+  b.textContent = on ? 'Show answers' : 'Hide answers';
+  document.querySelectorAll('tr.shown').forEach(tr => tr.classList.remove('shown'));
+};
+
+const dlg = document.getElementById('pasteDlg');
+document.getElementById('pasteCancel').onclick = () => dlg.close();
+function pasted() {
+  return document.getElementById('pasteText').value.split(/\r?\n/).map(line => {
+    let c = line.split('\t').map(s => s.trim());
+    return { q: c[0] || '', a: c[1] || '', n: c[2] || '', x: c.slice(3).join(' ').trim() };
+  }).filter(x => x.q || x.a || x.n || x.x);
+}
+document.getElementById('pasteAdd').onclick = () => { all[ri] = list().concat(pasted()); saveQ(); dlg.close(); renderRound(); };
+document.getElementById('pasteReplace').onclick = () => {
+  const p = pasted(); if (!p.length) return;
+  all[ri] = p; saveQ(); dlg.close(); renderRound();
+};
+
+window.addEventListener('storage', e => {
+  if (e.key === SKEY) { nav(); if (ri < 0) renderIndex(); else if (!document.body.classList.contains('edit')) renderRound(); }
+  if (e.key === QKEY) { all = loadQ(); ri < 0 ? renderIndex() : renderRound(); }
+});
+
+/* ---------- Count-up timer, shared by every questions tab ---------- */
+const SWKEY = 'quizStopwatch';
+let swStart = null;
+try { swStart = JSON.parse(localStorage.getItem(SWKEY)); } catch {}
+function swRestart() { swStart = Date.now(); localStorage.setItem(SWKEY, JSON.stringify(swStart)); swDraw(); }
+function swClear() { swStart = null; localStorage.removeItem(SWKEY); swDraw(); }
+function swDraw() {
+  const el = document.getElementById('sw');
+  const t = swStart ? Math.max(0, Math.floor((Date.now() - swStart) / 1000)) : 0;
+  const h = Math.floor(t / 3600), m = Math.floor(t / 60) % 60, sec = t % 60;
+  document.getElementById('swTime').textContent = (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(sec).padStart(2, '0');
+  el.classList.toggle('run', !!swStart);
+}
+document.getElementById('swGo').onclick = swRestart;
+document.getElementById('swStop').onclick = swClear;
+document.addEventListener('keydown', e => {
+  if ((e.key === 't' || e.key === 'T') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    const a = document.activeElement;
+    if (a && (a.isContentEditable || /INPUT|TEXTAREA|SELECT/.test(a.tagName))) return;
+    e.preventDefault(); swRestart();
+  }
+});
+window.addEventListener('storage', e => { if (e.key === SWKEY) { try { swStart = JSON.parse(e.newValue); } catch { swStart = null; } swDraw(); } });
+setInterval(swDraw, 250);
+swDraw();
+
+/* ---------- Save the whole quiz to a file (same format as the scoreboard's Save quiz) ---------- */
+document.getElementById('saveQuiz').onclick = async () => {
+  let scoring = readScoring();
+  if (!scoring) {
+    const b = bonusFlags();
+    scoring = { title: 'Quiz night', live: false, rounds: rounds().map((name, i) => ({ name, bonus: !!b[i] })), teams: [], lastRanks: null, useJoker: true };
+  }
+  let notes = ''; try { notes = localStorage.getItem('quizStartNotes') || ''; } catch {}
+  const data = { app: 'dk-quiz', version: 1, savedAt: new Date().toISOString(), scoring, questions: loadQ(), notes };
+  const text = JSON.stringify(data, null, 2);
+  const fname = ((scoring.title || 'Quiz').replace(/[\\/:*?"<>|]+/g, '').trim() || 'Quiz') + '.json';
+  const btn = document.getElementById('saveQuiz');
+  const done = msg => { btn.textContent = msg; setTimeout(() => btn.textContent = 'Save quiz', 2500); };
+  /* Saved as an ordinary browser download: this works everywhere, including OneDrive folders.
+     To choose the folder each time, turn on "Ask where to save each file before downloading"
+     in the browser's Downloads settings. */
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  a.download = fname; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  done('Saved: ' + fname);
+};
+
+document.getElementById('loadQuiz').onclick = () => { const f = document.getElementById('loadFile'); f.value = ''; f.click(); };
+document.getElementById('loadFile').addEventListener('change', async e => {
+  const file = e.target.files[0]; if (!file) return;
+  let data; try { data = JSON.parse(await file.text()); } catch { tell("That file couldn't be read. Choose a file made with Save quiz."); return; }
+  if (!data || data.app !== 'dk-quiz' || !data.scoring || !Array.isArray(data.scoring.rounds) || !Array.isArray(data.scoring.teams)) {
+    tell("That doesn't look like a quiz file. Choose a file made with Save quiz."); return;
+  }
+  const saved = data.savedAt ? new Date(data.savedAt).toLocaleString() : 'unknown date';
+  if (!(await askConfirm(`Load "${data.scoring.title || file.name}" (saved ${saved})?\n\nThis replaces the teams, rounds, scores, questions and start page notes here now. Save this quiz first if you want to keep it.`, 'Load'))) return;
+  try {
+    localStorage.setItem(QKEY, JSON.stringify(data.questions || {}));
+    localStorage.setItem(SKEY, JSON.stringify(data.scoring));
+    localStorage.removeItem('quizRoundNames'); localStorage.removeItem('quizRoundBonus');
+    if (data.notes) localStorage.setItem('quizStartNotes', data.notes); else localStorage.removeItem('quizStartNotes');   // start page notes
+  } catch { tell("The quiz couldn't be loaded. The browser's storage may be full."); return; }
+  all = loadQ();
+  nav(); ri < 0 ? renderIndex() : renderRound();
+  const btn = document.getElementById('loadQuiz');
+  btn.textContent = 'Loaded'; setTimeout(() => btn.textContent = 'Load quiz', 2500);
+});
+
+document.getElementById('cwMain').onclick = e => { e.preventDefault(); openCartwall(null); };
+document.getElementById('cwRound').onclick = () => openCartwall(ri);
+
+nav();
+if (ri < 0) renderIndex(); else renderRound();
+</script>
+</body>
+</html>

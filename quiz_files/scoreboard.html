@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Scoreboard</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%227%22%20fill%3D%22%231d7f45%22/%3E%3Crect%20x%3D%226%22%20y%3D%2215%22%20width%3D%225.5%22%20height%3D%2211%22%20rx%3D%221.2%22%20fill%3D%22%23fff%22/%3E%3Crect%20x%3D%2213.25%22%20y%3D%227%22%20width%3D%225.5%22%20height%3D%2219%22%20rx%3D%221.2%22%20fill%3D%22%23fff%22/%3E%3Crect%20x%3D%2220.5%22%20y%3D%2211%22%20width%3D%225.5%22%20height%3D%2215%22%20rx%3D%221.2%22%20fill%3D%22%23fff%22/%3E%3C/svg%3E">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { --bg:#f6f5f1; --card:#fff; --line:#dedcd4; --text:#222; --muted:#6b6a65; --accent:#2f6fd6; --joker:#fff1cc; --bonus:#eef6ff; --hcap:#f1efe8; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--text); font-size:15px; }
+  header { display:flex; flex-wrap:wrap; gap:10px; align-items:center; padding:12px 20px; background:var(--card); border-bottom:1px solid var(--line); }
+  header h1 { font-size:20px; margin:0 6px 0 0; font-weight:600; white-space:nowrap; }
+  #title { font-size:18px; font-weight:600; color:#6b6a65; flex:0 1 auto; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  #title.none { font-weight:400; font-size:14px; color:#aaa; }
+  header .spacer { flex:1 1 0; }
+  header > a, header > button { white-space:nowrap; }
+  #hcap { border:none; padding:0; width:140px; background:none; accent-color:var(--accent); }
+  .avail { display:flex; align-items:center; gap:8px; font-size:14px; color:var(--muted); }
+  #avail { width:80px; text-align:center; font-size:16px; -moz-appearance:textfield; appearance:textfield; }
+  #avail::-webkit-inner-spin-button, #avail::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+  main { padding:16px 20px 40px; }
+  .bar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:14px; }
+  button { font:inherit; padding:8px 14px; border:1px solid #c9c7bf; background:#fff; border-radius:8px; cursor:pointer; }
+  button:hover { background:#f0efea; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  button.primary:hover { background:#2559ad; }
+  button.big { padding:10px 18px; font-weight:600; }
+  button.danger { color:#b42318; border-color:#f0b4ae; }
+  button.danger:hover { background:#fdecea; }
+  input, select { font:inherit; border:1px solid #c9c7bf; border-radius:6px; padding:6px 8px; background:#fff; }
+  input:focus, select:focus { outline:2px solid var(--accent); outline-offset:-1px; }
+  .toggle { display:flex; align-items:center; gap:6px; padding:8px 12px; border:1px solid #c9c7bf; border-radius:8px; background:#fff; cursor:pointer; user-select:none; }
+  .toggle input { width:18px; height:18px; }
+  #status { color:var(--muted); font-size:13px; margin-left:auto; }
+  #status.ok::before { content:"● "; color:#1d9e55; }
+  #status.off::before { content:"● "; color:#c44; }
+  .tablewrap { overflow-x:auto; background:var(--card); border:1px solid var(--line); border-radius:10px; }
+  table { border-collapse:collapse; width:100%; }
+  th, td { padding:6px 5px; border-bottom:1px solid #eeede8; text-align:center; white-space:nowrap; vertical-align:middle; }
+  th { font-weight:600; font-size:13px; color:var(--muted); background:#fafaf7; position:sticky; top:0; }
+  td:first-child, th:first-child { text-align:left; padding-left:12px; position:sticky; left:0; z-index:1; background:var(--card); box-shadow: 1px 0 0 var(--line); }
+  th:first-child { z-index:3; background:#fafaf7; }
+  .tablewrap.scrolled td:first-child, .tablewrap.scrolled th:first-child { box-shadow: 1px 0 0 var(--line), 6px 0 8px -6px rgba(0,0,0,.25); }
+  .tname { width:200px; font-weight:600; }
+  .rhead { display:flex; align-items:center; justify-content:center; gap:3px; }
+  .rtag { font-weight:700; font-size:13px; color:var(--text); }
+  .rname::placeholder { color:#bbb; font-weight:400; }
+  .rname { width:84px; text-align:left; font-weight:600; font-size:13px; color:var(--muted); border-color:transparent; background:transparent; padding:4px; }
+  .rname:hover { border-color:#c9c7bf; }
+  .qbtn { font-size:15px; padding:8px 14px; border:1px solid #c9c7bf; background:#fff; border-radius:8px; text-decoration:none; color:var(--text); }
+  .qbtn:hover { background:#f0efea; }
+  .rmvs { display:flex; align-items:center; justify-content:center; gap:2px; margin-top:2px; }
+  .rmv { border:none; background:none; padding:0 4px; font-size:10px; color:#aaa; line-height:1; }
+  .rmv:hover { color:var(--accent); background:none; }
+  .qlink { display:block; font-size:11px; font-weight:500; color:var(--accent); text-decoration:none; margin-top:2px; }
+  .qlink:hover { text-decoration:underline; }
+  .bon { display:flex; justify-content:center; align-items:center; gap:4px; font-size:11px; font-weight:500; cursor:pointer; margin-top:2px; }
+  .score { width:62px; text-align:center; font-size:16px; }
+  .pair { display:flex; gap:3px; justify-content:center; }
+  .pair .score { width:56px; }
+  tfoot td { background:#fafaf7; border-bottom:none; border-top:2px solid var(--line); }
+  tfoot td.favail { font-size:13px; font-weight:600; color:var(--muted); background:#fafaf7; }
+  .score.av { font-size:14px; color:var(--muted); background:#fafaf7; }
+  .avbon { width:48px; font-size:12px; color:#7aa3d6; align-self:center; }
+  #availTot { font-size:14px; color:var(--muted); }
+  #availTot small { display:block; font-size:11px; font-weight:400; }
+  .bonbtn { width:48px; height:36px; padding:0; font-size:13px; font-weight:600; color:#7aa3d6; background:var(--bonus); border:1px dashed #9cc0ea; border-radius:6px; }
+  .bonbtn:hover { background:#e1eefc; color:#2f6fd6; }
+  .bonbtn.on { color:#fff; background:#2f6fd6; border:1px solid #2f6fd6; }
+  .score.bad { outline:2px solid #e24b4a; outline-offset:-1px; }
+  th.hcol, td.hcol { background:var(--hcap); }
+  td.hro { text-align:center; font-weight:700; color:#6b6a65; font-variant-numeric:tabular-nums; cursor:default; }
+  td.joker { background:var(--joker); }
+  td.joker .score.s { border-color:#e0a800; font-weight:700; }
+  .tcol { width:36px; height:32px; padding:2px; cursor:pointer; }
+  .total { font-size:18px; font-weight:700; min-width:60px; }
+  .split { display:block; font-size:11px; font-weight:400; color:var(--muted); }
+  .pos { color:var(--muted); font-weight:600; min-width:40px; }
+  .del { border:none; background:none; color:#aaa; padding:4px 8px; }
+  .del:hover { color:#c44; background:none; }
+  .hint { color:var(--muted); font-size:13px; margin-top:10px; line-height:1.5; }
+  .setup { margin-top:16px; }
+  .cd { display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 14px; margin-bottom:14px; }
+  .cdg { display:flex; align-items:center; gap:6px; flex-wrap:nowrap; }
+  .cdgrow { flex:0 1 auto; min-width:0; }
+  .cd strong { margin-right:2px; }
+  .cd button { padding:6px 11px; }
+  .cd select { padding:6px 6px; }
+  .cdnum { width:46px; text-align:center; font-size:16px; padding:6px 4px; }
+  #cdLabel { flex:0 1 170px; width:170px; min-width:110px; }
+  .cd .toggle { padding:6px 9px; }
+  .cdshow { font-size:24px; font-weight:800; font-variant-numeric:tabular-nums; min-width:68px; text-align:left; }
+  .cdshow.run { color:#1d7f45; } .cdshow.warn { color:#b77900; } .cdshow.crit { color:#c0281b; } .cdshow.paused { color:var(--muted); }
+  dialog { border:1px solid var(--line); border-radius:12px; padding:20px; width:min(460px, 92vw); }
+  dialog textarea { width:100%; height:220px; font:inherit; padding:8px; border:1px solid #c9c7bf; border-radius:6px; }
+  dialog .bar { margin:12px 0 0; justify-content:flex-end; }
+  .score { -moz-appearance:textfield; appearance:textfield; }
+  .score::-webkit-inner-spin-button, .score::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+  dialog.uidlg { border:1px solid #dedcd4; border-radius:12px; padding:20px 22px; width:min(440px, 92vw); color:#222; background:#fff; font-family:system-ui, "Segoe UI", Roboto, sans-serif; }
+  dialog.uidlg::backdrop { background:rgba(0,0,0,.35); }
+  dialog.uidlg .uimsg { margin:0 0 16px; white-space:pre-line; line-height:1.45; font-size:15px; }
+  dialog.uidlg .uirow { display:flex; gap:8px; justify-content:flex-end; }
+  dialog.uidlg button { font:inherit; font-size:14px; padding:8px 16px; border:1px solid #c9c7bf; background:#fff; border-radius:8px; cursor:pointer; }
+  dialog.uidlg .uiyes { background:#2f6fd6; border-color:#2f6fd6; color:#fff; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Scoreboard</h1>
+  <span id="title" title="The quiz title is set on the start page"></span>
+  <span class="spacer"></span>
+  <a href="../quiz.html" target="quizQuestionsIndex" class="qbtn" title="Open the quiz page: questions and answers, one tab per round">Quiz</a>
+  <button id="openBoard" class="primary" title="Open the leaderboard in its own window for the projector">Open leaderboard</button>
+</header>
+
+<main>
+  <div class="bar">
+    <label class="toggle" title="When on, every score change appears on the leaderboard straight away"><input type="checkbox" id="live"> Live updates</label>
+    <button id="reveal" class="big">Reveal scores</button>
+    <button id="revealDramatic" class="big">Big reveal</button>
+    <span id="status" class="off">Leaderboard not open</span>
+  </div>
+
+  <div class="cd">
+    <span class="cdg"><strong>Countdown</strong><span id="cdShow" class="cdshow">1:00</span></span>
+    <span class="cdg" title="Minutes : seconds">
+      <input id="cdMin" class="cdnum" type="number" min="0" step="1" value="1" title="Minutes">:<input id="cdSec" class="cdnum" type="number" min="0" max="59" step="5" value="0" title="Seconds">
+    </span>
+    <span class="cdg cdgrow">
+      <input id="cdLabel" value="Next round starts in" placeholder="Text above the timer" title="Text shown above the timer on the leaderboard">
+      <select id="cdSize" title="How the countdown appears on the leaderboard: big over the board, or small in the corner">
+        <option value="big">Big</option>
+        <option value="corner">Corner</option>
+      </select>
+      <label class="toggle" title="Countdowns over 30 seconds play countdown30.wav for the last 30 seconds. Shorter ones pip for the last 3 seconds and beep at zero. Sound plays from this laptop."><input type="checkbox" id="cdBeep" checked> Sound</label>
+    </span>
+    <span class="cdg">
+      <button id="cdStart" class="primary">Start</button>
+      <button id="cdStop">Stop</button>
+    </span>
+  </div>
+
+  <div class="tablewrap"><table id="grid"></table></div>
+  <div class="hint">
+    Handicap is entered once at the start. Scores are whole numbers from 0 to 99. Tick "bonus" under a round's name to add a +10 button for that round. Click it to give a team the bonus, and click again to remove it.<br>
+    Fill in "Points available" under each round. The leaderboard percentage is out of the whole quiz's points available, and bonus rounds include their +10 automatically.<br>
+    Enter moves down to the next team in the same column (Shift+Enter moves up). Joker doubles that round's points, not its bonus.
+  </div>
+
+  <div class="bar setup">
+    <strong style="font-size:14px;color:var(--muted);margin-right:4px">Leaderboard look</strong>
+  <label class="avail" title="How much of the leaderboard screen height the teams spread over. Lower it for fewer teams, raise it for more">Board height
+    <input id="hcap" type="range" min="40" max="100" step="5"><span id="hcapOut" style="min-width:38px">80%</span></label>
+    <label class="toggle" title="Draw every team's bar in one colour instead of each team's own colour"><input type="checkbox" id="oneColour"> One bar colour</label>
+    <input type="color" id="barColour" title="Bar colour" style="width:40px;height:36px;padding:2px;cursor:pointer">
+    <label class="toggle" title="Tile wallpaper.jpg (in the quiz_files folder) behind the leaderboard"><input type="checkbox" id="wallOn"> Wallpaper</label>
+    <label class="avail" title="Darkens the wallpaper so the scores stay readable">Dim <input id="wallDim" type="range" min="0" max="90" step="5" style="border:none;padding:0;width:100px;background:none;accent-color:var(--accent)"><span id="wallDimOut" style="min-width:34px">40%</span></label>
+  </div>
+  <div class="bar setup" style="margin-top:4px">
+    <button id="addTeam">+ Add team</button>
+    <button id="pasteTeams">Paste team list</button>
+    <button id="addRound">+ Add round</button>
+    <button id="removeRound">− Remove last round</button>
+    <label class="toggle" title="Turn off for quizzes with no joker round. Hides the Joker column and stops any doubling"><input type="checkbox" id="useJoker"> Joker round</label>
+    <span style="flex:1"></span>
+    <button id="exportCsv">Export CSV</button>
+    <button id="clearScores" class="danger">Clear all scores</button>
+    <button id="reset">New quiz</button>
+  </div>
+</main>
+
+<dialog id="pasteDlg">
+  <strong>Paste team names</strong>
+  <p class="hint" style="margin-top:4px">One team per line. You can copy a column straight from Excel. If you copy two columns, the second is used as the number of members, and the handicap is worked out from the baseline on the start page.</p>
+  <textarea id="pasteText"></textarea>
+  <div class="bar">
+    <button id="pasteCancel">Cancel</button>
+    <button id="pasteAdd">Add to list</button>
+    <button id="pasteReplace" class="primary">Replace all teams</button>
+  </div>
+</dialog>
+
+<script>
+/* In-page confirm / message boxes. The browser's own confirm() and alert() pop-ups make Chrome take
+   other windows (like the leaderboard on the projector) out of full screen, so these are used instead. */
+function uiDialog(msg, okLabel, cancelLabel) {
+  return new Promise(res => {
+    const d = document.createElement('dialog');
+    d.className = 'uidlg';
+    d.innerHTML = '<p class="uimsg"></p><div class="uirow">' + (cancelLabel ? '<button type="button" class="uino"></button>' : '') + '<button type="button" class="uiyes"></button></div>';
+    d.querySelector('.uimsg').textContent = msg;
+    d.querySelector('.uiyes').textContent = okLabel;
+    if (cancelLabel) d.querySelector('.uino').textContent = cancelLabel;
+    let done = false;
+    const finish = v => { if (done) return; done = true; try { d.close(); } catch (e) {} d.remove(); res(v); };
+    d.querySelector('.uiyes').onclick = () => finish(true);
+    if (cancelLabel) d.querySelector('.uino').onclick = () => finish(false);
+    d.addEventListener('cancel', e => { e.preventDefault(); finish(false); });
+    document.body.appendChild(d);
+    d.showModal();
+    d.querySelector('.uiyes').focus();
+  });
+}
+const askConfirm = (msg, ok = 'OK') => uiDialog(msg, ok, 'Cancel');
+const tell = msg => uiDialog(msg, 'OK', null);
+
+try { if (!window.name || window.name === '') window.name = 'quizScoring'; } catch {}
+const BONUS = 10;   // points for a bonus
+const PALETTE = ['#7F77DD','#1D9E75','#D85A30','#D4537E','#378ADD','#EF9F27','#639922','#E24B4A','#5DCAA5','#AFA9EC','#F0997B','#85B7EB','#97C459','#ED93B1','#BA7517','#9a9890'];
+const KEY = 'quizScoringState';
+const PUB = 'quizPublished';
+const bc = ('BroadcastChannel' in window) ? new BroadcastChannel('quiz-leaderboard') : null;
+let boardWin = null;
+let seq = Date.now();
+let liveTimer = null;
+let lastAck = 0;
+
+const uid = () => 't' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt = n => (Math.round(n * 2) / 2).toString();
+const num = v => (v === null || v === undefined || v === '' || isNaN(Number(v))) ? 0 : Number(v);
+const val = v => (v === null || v === undefined) ? '' : v;
+
+function nameOnly(n) { n = (n || '').trim(); return /^R\d+$/i.test(n) ? '' : n; }
+function roundLabel(i, n) { const x = nameOnly(n); return 'R' + (i + 1) + (x ? ' – ' + x : ''); }
+function defaultState() {
+  return {
+    title: 'Quiz night',
+    live: false,
+    rounds: (() => { let n = null; try { n = JSON.parse(localStorage.getItem('quizRoundNames')); } catch {} let bf = []; try { bf = JSON.parse(localStorage.getItem('quizRoundBonus')) || []; } catch {} return (n && n.length ? n : [1,2,3,4,5,6].map(i => 'R' + i)).map((name, i) => ({ name, bonus: !!bf[i] })); })(),
+    teams: [1,2,3,4].map(i => newTeam('Team ' + i, i - 1)),
+    lastRanks: null,
+    useJoker: true
+  };
+}
+function newTeam(name, idx, handicap) {
+  return { id: uid(), name, color: PALETTE[idx % PALETTE.length], handicap: handicap ?? null, scores: [], bonus: [], joker: -1 };
+}
+function load() {
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY));
+    if (!s) return null;
+    s.rounds = s.rounds.map(r => typeof r === 'string' ? { name: r, bonus: false } : r);
+    if (s.useJoker === undefined) s.useJoker = true;
+    s.teams.forEach(t => { t.bonus = t.bonus || []; if (t.handicap === undefined) t.handicap = null; });
+    return s;
+  } catch { return null; }
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {} }
+
+let state = load() || defaultState();
+
+function breakdown(t) {
+  let p = 0, b = 0;
+  state.rounds.forEach((r, i) => {
+    p += num(t.scores[i]) * (t.joker === i && state.useJoker ? 2 : 1);
+    if (r.bonus) b += num(t.bonus[i]);
+  });
+  const h = num(t.handicap);
+  return { h, p, b, total: h + p + b };
+}
+function roundPlayed(ri) { const r = state.rounds[ri]; return state.teams.some(t => (t.scores[ri] !== null && t.scores[ri] !== undefined && t.scores[ri] !== '') || (r && r.bonus && num(t.bonus[ri]) > 0)); }
+/* Percentage for one team: round points (doubled by a joker) plus bonus points,
+   out of the points available across the WHOLE quiz (every round's points available, plus +10 for bonus rounds). */
+function pctParts(t) {
+  let pe = 0;
+  state.rounds.forEach((r, i) => {
+    const jk = t.joker === i && state.useJoker ? 2 : 1;
+    pe += num(t.scores[i]) * jk + (r.bonus ? num(t.bonus[i]) : 0);
+  });
+  return { pe, pa: availableTotal() };
+}
+function roundAvail(ri) { const r = state.rounds[ri]; return num(r.avail) > 0 ? num(r.avail) + (r.bonus ? BONUS : 0) : 0; }
+function availableSoFar() { return state.rounds.reduce((sum, r, ri) => sum + (roundPlayed(ri) ? roundAvail(ri) : 0), 0); }
+function availableTotal() { return state.rounds.reduce((sum, r, ri) => sum + roundAvail(ri), 0); }
+function rankMap(entries) {
+  const sorted = [...entries].sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
+  const map = {};
+  let rank = 0, prev = null;
+  sorted.forEach((e, i) => { if (e.total !== prev) { rank = i + 1; prev = e.total; } map[e.id] = rank; });
+  return map;
+}
+
+function render() {
+  const g = document.getElementById('grid');
+  let h = '<thead><tr><th>Team</th><th>Colour</th><th class="hcol">Handicap</th>';
+  state.rounds.forEach((r, i) => h += `<th><div class="rhead"><span class="rtag">R${i + 1}</span><input class="rname" data-r="${i}" value="${esc(nameOnly(r.name))}" placeholder="Name" title="Round name. Change the running order on the questions page"></div><label class="bon"><input type="checkbox" class="rbonus" data-r="${i}" ${r.bonus ? 'checked' : ''}> bonus</label><a class="qlink" href="../quiz.html?r=${i + 1}" target="quizRound${i + 1}" title="Open this round's questions in its own tab">questions</a></th>`);
+  const jokers = !!state.useJoker;
+  h += (jokers ? '<th>Joker</th>' : '') + '<th>Total</th><th>Pos</th><th></th></tr></thead><tbody>';
+  state.teams.forEach((t, ti) => {
+    h += `<tr><td><input class="tname" data-t="${ti}" value="${esc(t.name)}"></td>`;
+    h += `<td><input type="color" class="tcol" data-t="${ti}" value="${t.color}"></td>`;
+    h += `<td class="hcol hro" title="Set on the start page from the team's members and the handicap baseline">${val(t.handicap)}</td>`;
+    state.rounds.forEach((r, ri) => {
+      h += `<td class="${t.joker === ri && jokers ? 'joker' : ''}"><div class="pair">`;
+      h += `<input class="score s" type="text" maxlength="2" inputmode="numeric" pattern="[0-9]*" autocomplete="off" data-t="${ti}" data-r="${ri}" data-k="s" value="${val(t.scores[ri])}">`;
+      if (r.bonus) { const on = num(t.bonus[ri]) > 0; h += `<button class="bonbtn${on ? ' on' : ''}" data-t="${ti}" data-r="${ri}" title="${on ? 'Bonus given. Click to remove' : 'Click to give ' + BONUS + ' bonus points'}">${on ? '+' + BONUS : '+' + BONUS}</button>`; }
+      h += `</div></td>`;
+    });
+    if (jokers) h += `<td><select class="tjoker" data-t="${ti}"><option value="-1">–</option>${state.rounds.map((r, ri) => `<option value="${ri}" ${t.joker === ri ? 'selected' : ''}>${esc(roundLabel(ri, r.name))}</option>`).join('')}</select></td>`;
+    h += `<td class="total" id="tot${ti}"></td><td class="pos" id="pos${ti}"></td>`;
+    h += `<td><button class="del" data-t="${ti}" title="Remove team">✕</button></td></tr>`;
+  });
+  h += '</tbody><tfoot><tr><td class="favail" title="Points available in each round. The leaderboard percentage compares each team\'s round and bonus points with the points available across the whole quiz">Points available</td><td></td><td class="hcol"></td>';
+  state.rounds.forEach((r, ri) => {
+    h += `<td><div class="pair"><input class="score av" type="text" maxlength="2" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="–" data-r="${ri}" data-k="av" value="${val(r.avail)}" title="Points available in ${esc(roundLabel(ri, r.name))}${r.bonus ? ' (the ' + BONUS + ' bonus is added automatically)' : ''}">${r.bonus ? `<span class="avbon">+${BONUS}</span>` : ''}</div></td>`;
+  });
+  h += (jokers ? '<td></td>' : '') + '<td class="total" id="availTot"></td><td></td><td></td></tr></tfoot>';
+  g.innerHTML = h;
+  showTitle();
+  document.getElementById('hcap').value = Math.round(hcap() * 100);
+  document.getElementById('hcapOut').textContent = Math.round(hcap() * 100) + '%';
+  document.getElementById('live').checked = !!state.live;
+  document.getElementById('useJoker').checked = !!state.useJoker;
+  document.getElementById('oneColour').checked = !!state.oneColour;
+  document.getElementById('wallOn').checked = wallOn();
+  document.getElementById('wallDim').value = Math.round(wallDim() * 100);
+  document.getElementById('wallDimOut').textContent = Math.round(wallDim() * 100) + '%';
+  document.getElementById('barColour').value = state.barColour || '#910885';
+  updateTotals();
+}
+
+const nameCanvas = document.createElement('canvas').getContext('2d');
+function fitNameInputs() {
+  const inputs = document.querySelectorAll('.tname');
+  if (!inputs.length) return;
+  const cs = getComputedStyle(inputs[0]);
+  nameCanvas.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+  let w = nameCanvas.measureText('Team 10').width;
+  state.teams.forEach(t => w = Math.max(w, nameCanvas.measureText(t.name || '').width));
+  const px = Math.ceil(w + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight) + 6);
+  inputs.forEach(i => i.style.width = Math.min(px, 360) + 'px');
+}
+function updateTotals() {
+  fitNameInputs();
+  const at = document.getElementById('availTot');
+  if (at) { const tot = availableTotal(); at.innerHTML = tot ? `${tot}<small>${availableSoFar()} played so far</small>` : ''; }
+  const entries = state.teams.map(t => ({ id: t.id, name: t.name, ...breakdown(t) }));
+  const rk = rankMap(entries);
+  const counts = {};
+  Object.values(rk).forEach(r => counts[r] = (counts[r] || 0) + 1);
+  state.teams.forEach((t, ti) => {
+    const e = entries[ti];
+    const tot = document.getElementById('tot' + ti), pos = document.getElementById('pos' + ti);
+    if (tot) tot.innerHTML = `${fmt(e.total)}<span class="split">H ${fmt(e.h)} · P ${fmt(e.p)} · B ${fmt(e.b)}</span>`;
+    if (pos) pos.textContent = (counts[rk[t.id]] > 1 ? '=' : '') + rk[t.id];
+  });
+}
+
+/* ---------- Talking to the leaderboard ---------- */
+function send(msg) {
+  if (msg.type === 'scores') { try { localStorage.setItem(PUB, JSON.stringify(msg)); } catch {} }
+  if (msg.type === 'countdown') { try { localStorage.setItem('quizCountdown', JSON.stringify(msg)); } catch {} }
+  if (bc) bc.postMessage(msg);
+  if (boardWin && !boardWin.closed) { try { boardWin.postMessage(msg, '*'); } catch {} }
+}
+
+function publish(style, zero) {
+  const entries = state.teams.map(t => {
+    const b = zero ? { h: 0, p: 0, b: 0, total: 0 } : breakdown(t);
+    const pp = zero ? { pe: 0, pa: 0 } : pctParts(t);
+    return { id: t.id, name: t.name || '(unnamed)', color: t.color, ...b, ...pp };
+  });
+  const rk = rankMap(entries);
+  const moves = {};
+  if (state.lastRanks && !zero) {
+    entries.forEach(e => { if (state.lastRanks[e.id]) moves[e.id] = state.lastRanks[e.id] - rk[e.id]; });
+  }
+  if (style !== 'live' && !zero) { state.lastRanks = rk; save(); }
+  send({ type: 'scores', seq: ++seq, style, title: state.title, available: entries.some(e => e.pa > 0) ? 1 : 0, heightCap: hcap(), barColour: barColour(), wallpaper: wallOn(), wallDim: wallDim(), entries, moves });
+}
+
+function liveMaybe() {
+  if (!state.live) return;
+  clearTimeout(liveTimer);
+  liveTimer = setTimeout(() => publish('live'), 300);
+}
+
+function onBoardMessage(msg) {
+  if (!msg || typeof msg !== 'object') return;
+  if (msg.type === 'hello') {
+    let last = null;
+    try { last = JSON.parse(localStorage.getItem(PUB)); } catch {}
+    if (last && last.type === 'scores') send({ ...last, style: 'live', seq: ++seq, title: state.title, heightCap: hcap(), barColour: barColour(), wallpaper: wallOn(), wallDim: wallDim() });
+    else publish('live', true);
+    if (cd.running) cdSend();
+    markConnected();
+  }
+  if (msg.type === 'ack') markConnected();
+}
+function markConnected() {
+  lastAck = Date.now();
+  const s = document.getElementById('status');
+  s.className = 'ok';
+  s.textContent = 'Leaderboard connected · updated ' + new Date().toLocaleTimeString();
+}
+if (bc) bc.onmessage = e => onBoardMessage(e.data);
+window.addEventListener('message', e => onBoardMessage(e.data));
+setInterval(() => {
+  if (boardWin && boardWin.closed && lastAck) {
+    const s = document.getElementById('status');
+    s.className = 'off'; s.textContent = 'Leaderboard window closed';
+  }
+}, 2000);
+
+/* ---------- Grid events ---------- */
+const grid = document.getElementById('grid');
+const wrap = document.querySelector('.tablewrap');
+wrap.addEventListener('scroll', () => wrap.classList.toggle('scrolled', wrap.scrollLeft > 0));
+grid.addEventListener('input', e => {
+  const el = e.target, ti = +el.dataset.t, t = state.teams[ti];
+  if (el.classList.contains('score')) {
+    const clean = el.value.replace(/\D/g, '').slice(0, 2);
+    if (clean !== el.value) {
+      el.value = clean;
+      el.classList.add('bad'); clearTimeout(el._bad); el._bad = setTimeout(() => el.classList.remove('bad'), 600);
+    }
+  }
+  const v = el.value === '' ? null : Math.round(Number(el.value));
+  if (el.dataset.k === 'av') {
+    state.rounds[+el.dataset.r].avail = v;
+    updateTotals(); save(); liveMaybe();
+    return;
+  }
+  if (el.classList.contains('score')) {
+    const k = el.dataset.k, ri = +el.dataset.r;
+    if (k === 'h') t.handicap = v;
+    else if (k === 's') t.scores[ri] = v;
+    else if (k === 'b') t.bonus[ri] = v;
+    updateTotals(); save(); liveMaybe();
+  } else if (el.classList.contains('tname')) {
+    t.name = el.value; updateTotals(); save(); liveMaybe();
+  } else if (el.classList.contains('tcol')) {
+    t.color = el.value; save(); liveMaybe();
+  } else if (el.classList.contains('rname')) {
+    const ri = +el.dataset.r;
+    state.rounds[ri].name = el.value.trim() || ('R' + (ri + 1));
+    document.querySelectorAll(`.tjoker option[value="${ri}"]`).forEach(o => o.textContent = roundLabel(ri, state.rounds[ri].name));
+    save();
+  }
+});
+grid.addEventListener('change', async e => {
+  const el = e.target;
+  if (el.classList.contains('tjoker')) {
+    const ti = +el.dataset.t;
+    state.teams[ti].joker = +el.value;
+    grid.querySelectorAll(`.score.s[data-t="${ti}"]`).forEach(inp => inp.closest('td').classList.toggle('joker', +inp.dataset.r === +el.value));
+    updateTotals(); save(); liveMaybe();
+
+  } else if (el.classList.contains('rbonus')) {
+    const ri = +el.dataset.r;
+    const had = state.teams.some(t => num(t.bonus[ri]) !== 0);
+    if (!el.checked && had && !(await askConfirm(`Turn off bonus for "${state.rounds[ri].name}"? Its bonus points will stop counting.`, 'Turn off'))) { el.checked = true; return; }
+    state.rounds[ri].bonus = el.checked;
+    save(); render(); liveMaybe();
+  }
+});
+grid.addEventListener('keydown', e => {
+  const el = e.target;
+  if (e.key !== 'Enter' || !el.classList.contains('score')) return;
+  e.preventDefault();
+  const k = el.dataset.k, n = state.teams.length;
+  let ti = +el.dataset.t + (e.shiftKey ? -1 : 1), ri = +el.dataset.r;
+  const sel = (t, r) => k === 'h' ? `.score.h[data-t="${t}"]` : `.score.${k}[data-t="${t}"][data-r="${r}"]`;
+  let next = (ti >= 0 && ti < n) ? grid.querySelector(sel(ti, ri)) : null;
+  if (!next && k === 's' && !e.shiftKey) next = grid.querySelector(sel(0, ri + 1));
+  if (next) { next.focus(); next.select(); } else el.blur();
+});
+grid.addEventListener('click', async e => {
+  const el = e.target;
+  if (el.classList.contains('bonbtn')) {
+    const t = state.teams[+el.dataset.t], ri = +el.dataset.r;
+    const on = !(num(t.bonus[ri]) > 0);
+    t.bonus[ri] = on ? BONUS : null;
+    el.classList.toggle('on', on);
+    el.title = on ? 'Bonus given. Click to remove' : 'Click to give ' + BONUS + ' bonus points';
+    updateTotals(); save(); liveMaybe();
+    return;
+  }
+  if (el.classList.contains('del')) {
+    const t = state.teams[+el.dataset.t];
+    if (await askConfirm(`Remove "${t.name}"?`, 'Remove')) { state.teams.splice(+el.dataset.t, 1); save(); render(); liveMaybe(); }
+  }
+});
+grid.addEventListener('focusin', e => { if (e.target.classList.contains('score')) e.target.select(); });
+
+/* ---------- Buttons ---------- */
+/* The quiz title is set on the start page (start.html); this page shows it and passes it to the leaderboard. */
+function showTitle() {
+  const el = document.getElementById('title');
+  el.textContent = state.title || 'No quiz title yet. Set it on the start page';
+  el.classList.toggle('none', !state.title);
+}
+function hcap() { return state.heightCap ?? 0.8; }
+function barColour() { return state.oneColour ? (state.barColour || '#910885') : null; }
+function wallOn() { return state.wallpaper ?? true; }
+function wallDim() { return (state.wallDim ?? 40) / 100; }
+function sendMeta() { send({ type: 'title', title: state.title, heightCap: hcap(), barColour: barColour(), wallpaper: wallOn(), wallDim: wallDim() }); }
+document.getElementById('wallOn').addEventListener('change', e => { state.wallpaper = e.target.checked; save(); sendMeta(); });
+document.getElementById('wallDim').addEventListener('input', e => { state.wallDim = +e.target.value; document.getElementById('wallDimOut').textContent = e.target.value + '%'; save(); sendMeta(); });
+document.getElementById('oneColour').addEventListener('change', e => { state.oneColour = e.target.checked; save(); sendMeta(); });
+document.getElementById('barColour').addEventListener('input', e => { state.barColour = e.target.value; save(); if (state.oneColour) sendMeta(); });
+document.getElementById('hcap').addEventListener('input', e => {
+  state.heightCap = Number(e.target.value) / 100;
+  document.getElementById('hcapOut').textContent = e.target.value + '%';
+  save();
+  sendMeta();
+});
+document.getElementById('live').addEventListener('change', e => {
+  state.live = e.target.checked; save();
+  if (state.live) publish('live');
+});
+document.getElementById('useJoker').addEventListener('change', e => {
+  state.useJoker = e.target.checked; save(); render(); liveMaybe();
+});
+document.getElementById('reveal').onclick = () => publish('reveal');
+document.getElementById('revealDramatic').onclick = () => publish('dramatic');
+/* The leaderboard is opened WITHOUT a link back to this page ("noopener").
+   Browsers drop a page out of full screen when another page it's linked to opens a window, so this keeps
+   the leaderboard full screen while round tabs and other windows are opened. Scores reach it through the
+   BroadcastChannel and local storage, which don't need that link. */
+function pingBoard(ms) {
+  return new Promise(res => {
+    if (!bc) return res(false);
+    let done = false;
+    const on = e => { if (e.data && e.data.type === 'boardPong') { done = true; bc.removeEventListener('message', on); res(true); } };
+    bc.addEventListener('message', on);
+    bc.postMessage({ type: 'boardPing' });
+    setTimeout(() => { if (!done) { bc.removeEventListener('message', on); res(false); } }, ms);
+  });
+}
+function boardNote(msg, ok) {
+  const st = document.getElementById('status');
+  st.className = ok ? 'ok' : 'off'; st.textContent = msg;
+}
+document.getElementById('openBoard').onclick = async () => {
+  if (await pingBoard(250)) { boardNote('The leaderboard is already open in its own window', true); return; }
+  const t0 = Date.now();
+  window.open(new URL('leaderboard.html', location.href).href, 'quizLeaderboard', 'noopener,popup=yes,width=1280,height=800');
+  setTimeout(() => { if (lastAck < t0) boardNote('No leaderboard appeared. Allow pop-ups for this page and try again', false); }, 3000);
+};
+document.getElementById('addTeam').onclick = () => {
+  state.teams.push(newTeam('Team ' + (state.teams.length + 1), state.teams.length));
+  save(); render(); liveMaybe();
+  const inputs = grid.querySelectorAll('.tname'); const last = inputs[inputs.length - 1];
+  last.focus(); last.select();
+};
+document.getElementById('addRound').onclick = () => {
+  state.rounds.push({ name: 'R' + (state.rounds.length + 1), bonus: false }); save(); render();
+};
+document.getElementById('removeRound').onclick = async () => {
+  const ri = state.rounds.length - 1;
+  if (ri < 0) return;
+  const hasScores = state.teams.some(t => num(t.scores[ri]) !== 0 || num(t.bonus[ri]) !== 0);
+  let q = {}; try { q = JSON.parse(localStorage.getItem('quizQuestions')) || {}; } catch {}
+  const nq = (q[ri] || []).length;
+  const what = [hasScores ? 'scores' : '', nq ? `${nq} question${nq === 1 ? '' : 's'}` : ''].filter(Boolean).join(' and ');
+  if (what && !(await askConfirm(`"${state.rounds[ri].name}" has ${what} in it. Remove it anyway?`, 'Remove'))) return;
+  if (q[ri]) { delete q[ri]; try { localStorage.setItem('quizQuestions', JSON.stringify(q)); } catch {} }
+  state.rounds.pop();
+  state.teams.forEach(t => {
+    t.scores.length = Math.min(t.scores.length, state.rounds.length);
+    t.bonus.length = Math.min(t.bonus.length, state.rounds.length);
+    if (t.joker === ri) t.joker = -1;
+  });
+  save(); render(); liveMaybe();
+};
+
+const dlg = document.getElementById('pasteDlg');
+document.getElementById('pasteTeams').onclick = () => { document.getElementById('pasteText').value = ''; dlg.showModal(); };
+document.getElementById('pasteCancel').onclick = () => dlg.close();
+/* Handicaps come from the start page: baseline − members, never below 0. */
+function teamFromPaste(x, i) {
+  const t = newTeam(x.name, i, null);
+  if (x.m !== null) { t.members = x.m; if (state.baseline != null) t.handicap = Math.max(0, state.baseline - x.m); }
+  return t;
+}
+function pasted() {
+  return document.getElementById('pasteText').value.split(/\r?\n/).map(line => {
+    const cols = line.split('\t').map(s => s.trim());
+    const m = cols[1] !== undefined && /^\d{1,2}$/.test(cols[1]) ? Number(cols[1]) : null;
+    return { name: cols[0], m };
+  }).filter(x => x.name);
+}
+document.getElementById('pasteAdd').onclick = () => {
+  pasted().forEach(x => state.teams.push(teamFromPaste(x, state.teams.length)));
+  dlg.close(); save(); render(); liveMaybe();
+};
+document.getElementById('pasteReplace').onclick = () => {
+  const list = pasted();
+  if (!list.length) return;
+  state.teams = list.map((x, i) => teamFromPaste(x, i));
+  state.lastRanks = null;
+  dlg.close(); save(); render(); liveMaybe();
+};
+
+document.getElementById('exportCsv').onclick = () => {
+  const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const head = ['Team', 'Handicap'];
+  state.rounds.forEach((r, i) => { head.push(roundLabel(i, r.name)); if (r.bonus) head.push(roundLabel(i, r.name) + ' bonus'); });
+  head.push('Joker round', 'Handicap total', 'Round points', 'Bonus total', 'Total');
+  const rows = [head.map(q).join(',')];
+  state.teams.forEach(t => {
+    const b = breakdown(t), row = [t.name, val(t.handicap)];
+    state.rounds.forEach((r, i) => { row.push(val(t.scores[i])); if (r.bonus) row.push(val(t.bonus[i])); });
+    row.push(t.joker >= 0 && state.rounds[t.joker] && state.useJoker ? roundLabel(t.joker, state.rounds[t.joker].name) : '', b.h, b.p, b.b, b.total);
+    rows.push(row.map(q).join(','));
+  });
+  const blob = new Blob([rows.join('\r\n')], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = (state.title || 'quiz').replace(/[^\w\- ]+/g, '') + ' scores.csv';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+document.getElementById('clearScores').onclick = async () => {
+  if (!(await askConfirm('Clear all round scores, bonus points and jokers? Teams and their handicaps are kept.', 'Clear'))) return;
+  state.teams.forEach(t => { t.scores = []; t.bonus = []; t.joker = -1; });
+  state.lastRanks = null;
+  save(); render(); publish('live');
+};
+document.getElementById('reset').onclick = async () => {
+  if (!(await askConfirm('Start a new quiz? This clears all scores, bonuses, jokers, team members and handicaps. Team names and colours are kept.', 'Start new quiz'))) return;
+  state.teams.forEach(t => { t.scores = []; t.bonus = []; t.joker = -1; t.handicap = null; delete t.members; });   // members go too, as handicaps come from them
+  state.lastRanks = null;
+  save(); render(); publish('live', true);
+};
+
+/* ---------- Countdown ---------- */
+let cd = Object.assign({ running: false, paused: false, endAt: 0, remaining: 0, duration: 180000, label: 'Next round starts in', size: 'big' }, state.countdown || {});
+if (cd.paused) { cd.running = false; cd.paused = false; }
+let pips = {};
+let actx = null;
+const wav = new Audio('countdown30.wav');
+wav.preload = 'auto';
+let wavOk = true;
+wav.addEventListener('error', () => { wavOk = false; console.warn('countdown30.wav could not be loaded. Falling back to beeps.'); });
+const useWav = () => wavOk && $('cdBeep').checked && cd.duration > 30000;
+function wavStop() { if (!wav.paused) wav.pause(); }
+const $ = id => document.getElementById(id);
+$('cdLabel').value = cd.label; $('cdSize').value = cd.size;
+
+function cdRemaining() { if (!cd.running) return 0; return cd.paused ? cd.remaining : Math.max(0, cd.endAt - Date.now()); }
+function cdSend() { state.countdown = cd; save(); send({ type: 'countdown', seq: ++seq, ...cd }); }
+function mmss(ms) { const t = Math.ceil(ms / 1000), m = Math.floor(t / 60), s = t % 60; return m + ':' + String(s).padStart(2, '0'); }
+function tone(freq, dur) {
+  if (!$('cdBeep').checked || useWav()) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime;
+    o.type = 'sine'; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.5, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(actx.destination); o.start(t); o.stop(t + dur + 0.05);
+  } catch {}
+}
+function unlockAudio() { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); actx.resume(); } catch {} }
+
+$('cdStart').onclick = () => {
+  const dur = (Math.max(0, +$('cdMin').value || 0) * 60 + Math.max(0, +$('cdSec').value || 0)) * 1000;
+  if (dur <= 0) { $('cdMin').focus(); return; }
+  unlockAudio();
+  wavStop(); try { wav.load(); } catch {}
+  cd = { ...cd, running: true, paused: false, duration: dur, endAt: Date.now() + dur, remaining: dur, label: $('cdLabel').value, size: $('cdSize').value };
+  pips = {};
+  cdSend();
+};
+$('cdStop').onclick = () => { cd.running = false; cd.paused = false; cdSend(); };
+$('cdLabel').addEventListener('input', () => { cd.label = $('cdLabel').value; if (cd.running) cdSend(); else { state.countdown = cd; save(); } });
+$('cdSize').addEventListener('change', () => { cd.size = $('cdSize').value; if (cd.running) cdSend(); else { state.countdown = cd; save(); } });
+
+setInterval(() => {
+  const show = $('cdShow');
+  syncWav();
+  if (!cd.running) {
+    const ms = ((+$('cdMin').value || 0) * 60 + (+$('cdSec').value || 0)) * 1000;
+    show.textContent = mmss(ms); show.className = 'cdshow';
+    return;
+  }
+  const r = cdRemaining();
+  if (r <= 0) {
+    if (!pips[0]) { pips[0] = 1; tone(880, 1.2); }
+    show.textContent = "Time's up"; show.className = 'cdshow crit';
+    if (Date.now() - cd.endAt > 6000) { cd.running = false; state.countdown = cd; save(); }
+    return;
+  }
+  show.textContent = mmss(r);
+  show.className = 'cdshow ' + (cd.paused ? 'paused' : r <= 10000 ? 'crit' : r <= 30000 ? 'warn' : 'run');
+  const sLeft = Math.ceil(r / 1000);
+  if (!cd.paused && sLeft <= 3 && !pips[sLeft]) { pips[sLeft] = 1; tone(660, 0.15); }
+}, 100);
+
+function syncWav() {
+  const r = cdRemaining();
+  const inWindow = cd.running && !cd.paused && r > 0 && r <= 30000;
+  if (inWindow && useWav()) {
+    const target = 30 - r / 1000;
+    if (wav.paused) {
+      try { wav.currentTime = target; } catch {}
+      wav.play().catch(() => {});
+    } else if (Math.abs(wav.currentTime - target) > 0.75) {
+      try { wav.currentTime = target; } catch {}
+    }
+  } else if (!(cd.running && r <= 0)) {
+    wavStop();
+  }
+}
+
+window.addEventListener('storage', e => {
+  if (e.key !== KEY || !e.newValue) return;
+  const other = load();
+  if (!other || JSON.stringify(other) === JSON.stringify(state)) return;
+  const titleChanged = (other.title || '') !== (state.title || '');
+  const renamedOnly = other.rounds.length === state.rounds.length &&
+    other.rounds.every((r, i) => r.bonus === state.rounds[i].bonus) &&
+    JSON.stringify(other.teams) === JSON.stringify(state.teams);
+  if (renamedOnly) {
+    other.rounds.forEach((r, i) => {
+      state.rounds[i].name = r.name;
+      if ('audio' in r) state.rounds[i].audio = r.audio; else delete state.rounds[i].audio;
+      if ('intro' in r) state.rounds[i].intro = r.intro; else delete state.rounds[i].intro;
+      const box = document.querySelector(`.rname[data-r="${i}"]`);
+      if (box && document.activeElement !== box && box.value !== nameOnly(r.name)) box.value = nameOnly(r.name);
+      document.querySelectorAll(`.tjoker option[value="${i}"]`).forEach(o => o.textContent = roundLabel(i, r.name));
+    });
+    if (titleChanged) { state.title = other.title; showTitle(); sendMeta(); }
+    if ('baseline' in other) state.baseline = other.baseline; else delete state.baseline;   // handicap baseline, set on the start page
+    return;
+  }
+  const sameTeams = JSON.stringify(other.teams.map(t => t.id)) === JSON.stringify(state.teams.map(t => t.id));
+  state = other;
+  render();
+  if (!sameTeams) publish('live');
+  else { if (titleChanged) sendMeta(); liveMaybe(); }   // e.g. team names changed on the start page
+});
+
+function moveRound(from, to) {
+  if (to < 0 || to >= state.rounds.length || from === to) return;
+  const order = [...state.rounds.keys()];
+  const [x] = order.splice(from, 1); order.splice(to, 0, x);
+  const inv = {}; order.forEach((old, ni) => inv[old] = ni);
+  state.rounds = order.map(o => state.rounds[o]).map((r, i) => /^R\d+$/i.test((r.name || '').trim()) ? { ...r, name: 'R' + (i + 1) } : r);
+  state.teams.forEach(t => {
+    t.scores = order.map(o => t.scores[o] ?? null);
+    t.bonus = order.map(o => t.bonus[o] ?? null);
+    if (t.joker >= 0) t.joker = inv[t.joker] ?? -1;
+  });
+  let q = {}; try { q = JSON.parse(localStorage.getItem('quizQuestions')) || {}; } catch {}
+  const nq = {};
+  order.forEach((o, ni) => { if (q[o]) nq[ni] = q[o]; });
+  Object.keys(q).forEach(k => { if (+k >= order.length) nq[k] = q[k]; });
+  try { localStorage.setItem('quizQuestions', JSON.stringify(nq)); } catch {}
+  save(); render(); liveMaybe();
+  document.querySelector(`.rmv[data-r="${to}"][data-d="${to > from ? 1 : -1}"]`)?.focus();
+}
+
+save();
+render();
+</script>
+</body>
+</html>
